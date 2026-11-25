@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark bg-[#070b0f]">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BTC/USDT // RADAR TERMINAL v5 + PREDICTIVE MACD SLOPE ENGINE + 123 GEO ENGINE</title>
+  <title>BTC/USDT // RADAR TERMINAL v7 + MTF BUY/SELL STRENGTH + CONSOLIDATED RADAR SIGNAL + 50x TIME MACHINE</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: JetBrains Mono & Inter -->
@@ -35,12 +35,12 @@
       },
     };
   </script>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
-<body class="min-h-screen text-slate-200 antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+<body class="min-h-screen bg-[#070b0f] text-slate-200 antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
 
   <!-- ==================== TOP HEADER BAR ==================== -->
-  <header class="sticky top-0 z-40 border-b border-[#1a2634] bg-[#070b0f]/95 backdrop-blur-md">
+  <header class="lg:sticky lg:top-0 z-40 border-b border-[#1a2634] bg-[#070b0f]/95 backdrop-blur-md">
     <div class="max-w-[1640px] mx-auto px-3 sm:px-5 py-2.5 space-y-2.5">
       <!-- Row 1: Brand, Status, Geo Counter, Live Price, VWAP, OBI -->
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -85,19 +85,23 @@
         <!-- Navigation Tabs -->
         <div class="flex flex-wrap items-center gap-1.5 bg-[#0b1117] p-1 rounded-xl border border-[#1a2634]">
           <button id="tabMainBtn" onclick="switchTab('main')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-cyan-500/15 text-cyan-300 border border-cyan-500/40">
-            मुख्य टर्मिनल <span class="hidden sm:inline opacity-80">(MAIN TERMINAL)</span>
+            MAIN TERMINAL
           </button>
           <button id="tabLibraryBtn" onclick="switchTab('library')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-slate-200 border border-transparent flex items-center gap-1.5">
-            पैटर्न लाइब्रेरी <span class="hidden sm:inline opacity-80">(123 PATTERNS)</span>
+            123 PATTERNS
             <span id="tabLibBadge" class="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">0</span>
           </button>
           <button id="tabHistoryBtn" onclick="switchTab('history')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-slate-200 border border-transparent flex items-center gap-1.5">
-            इतिहास लॉग <span class="hidden sm:inline opacity-80">(PATTERN HISTORY)</span>
+            PATTERN HISTORY
             <span id="tabHistBadge" class="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">0</span>
             <span id="tabHistPulse" class="hidden inline-flex h-2 w-2 rounded-full bg-rose-500 pulse-dot" title="Last-Point Fail Alert Recorded"></span>
           </button>
+          <button id="tabTmBtn" onclick="switchTab('timemachine')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-slate-200 border border-transparent flex items-center gap-1.5">
+            TIME MACHINE <span class="hidden sm:inline opacity-80">(50x SIM)</span>
+            <span id="tabTmBadge" class="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40">50x</span>
+          </button>
           <button id="tabLabBtn" onclick="switchTab('lab')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-slate-200 border border-transparent">
-            फ़ॉर्मूला लैब <span class="hidden sm:inline opacity-80">(FORMULA LAB)</span>
+            FORMULA LAB
           </button>
         </div>
 
@@ -140,12 +144,12 @@
   <main class="max-w-[1640px] mx-auto px-3 sm:px-5 py-4 space-y-4">
 
     <!-- ================================================================ -->
-    <!-- TAB 1: मुख्य टर्मिनल (MAIN TERMINAL)                              -->
+    <!-- TAB 1: MAIN TERMINAL                                              -->
     <!-- ================================================================ -->
     <section id="viewMain" class="space-y-4">
 
       <!-- MAIN CHART & VPVR PANEL -->
-      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-3 sm:p-4 space-y-3">
         <!-- Chart Header & Layer Toggles -->
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -167,6 +171,7 @@
             <button id="togMl" onclick="toggleLayer('mlSignals')" class="px-2.5 py-1 rounded-lg border border-fuchsia-500/50 bg-fuchsia-500/15 text-fuchsia-300 font-semibold transition">● ML SIGNALS</button>
             <button id="togGeo" onclick="toggleLayer('geoPattern')" class="px-2.5 py-1 rounded-lg border border-sky-400/60 bg-sky-500/15 text-sky-300 font-semibold transition">● GEO #1 WINNER</button>
             <button id="togMacdPred" onclick="toggleLayer('macdPredict')" class="px-2.5 py-1 rounded-lg border border-lime-400/60 bg-lime-500/15 text-lime-300 font-semibold transition">● MACD PREDICT</button>
+            <button id="togTimeMachine" onclick="toggleLayer('timeMachine')" class="px-2.5 py-1 rounded-lg border border-violet-400/60 bg-violet-500/15 text-violet-300 font-semibold transition">● 50x CONE</button>
           </div>
         </div>
 
@@ -186,6 +191,37 @@
             <span><span class="text-slate-500">NET Δ:</span> <span id="roDelta" class="font-bold text-emerald-400">--</span></span>
             <span><span class="text-slate-500">OBI:</span> <span id="roObi" class="font-bold text-cyan-400">--</span></span>
             <span id="roMacdPred" class="px-1.5 py-0.5 rounded border border-slate-700 bg-[#0e161f] text-slate-300 font-bold text-[10.5px]">MACD: NEUTRAL</span>
+          </div>
+        </div>
+
+        <!-- DEDICATED TOP-OF-CHART MTF BUY/SELL STRENGTH & CONSOLIDATED RADAR SIGNAL DASHBOARD -->
+        <div class="rounded-xl bg-[#070c12] border border-[#1a2634] p-2.5 sm:p-3 space-y-2.5">
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-2.5 items-stretch">
+            <!-- Consolidated Overall Radar Signal Card (4 cols) -->
+            <div id="radarConsolidatedCard" class="xl:col-span-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-2.5 flex flex-col justify-between gap-1.5 transition-all">
+              <div class="flex items-center justify-between gap-2 font-mono">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-slate-300">CONSOLIDATED RADAR SIGNAL</span>
+                <span id="radarDomTfBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-400/50 bg-emerald-500/20 text-emerald-200">DOMINANT: --</span>
+              </div>
+              <div class="flex items-baseline justify-between gap-2 font-mono-num">
+                <span id="radarOverallTitle" class="text-base sm:text-lg font-extrabold tracking-wide text-emerald-400">BULLISH BUY</span>
+                <span id="radarOverallPct" class="text-lg sm:text-xl font-extrabold text-emerald-300">--%</span>
+              </div>
+              <div class="w-full h-2.5 rounded-full bg-[#111c27] overflow-hidden flex border border-[#1e2d3d]">
+                <div id="radarOverallBuyBar" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300" style="width: 50%"></div>
+                <div id="radarOverallSellBar" class="h-full bg-gradient-to-r from-rose-400 to-rose-600 transition-all duration-300" style="width: 50%"></div>
+              </div>
+              <div class="flex items-center justify-between font-mono-num text-[10px]">
+                <span class="text-emerald-400 font-bold">BUY: <span id="radarOverallBuyTxt">50%</span></span>
+                <span id="radarOverallSub" class="text-slate-400">All 4 TFs Weighted</span>
+                <span class="text-rose-400 font-bold">SELL: <span id="radarOverallSellTxt">50%</span></span>
+              </div>
+            </div>
+
+            <!-- Dedicated All-Timeframe (1m | 5m | 15m | 4h) Buy vs Sell Strength Mini-Dashboard (8 cols) -->
+            <div class="xl:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-2" id="mtfBuySellMiniGrid">
+              <!-- Populated live by renderMtfStrengthDashboard() -->
+            </div>
           </div>
         </div>
 
@@ -268,14 +304,14 @@
           <div class="xl:col-span-4 flex flex-col justify-center">
             <div id="signalBox" class="h-full rounded-xl p-3 border border-cyan-500/30 bg-cyan-500/10 space-y-1.5 transition-all flex flex-col justify-between">
               <div class="flex items-center justify-between font-mono text-[10px] tracking-wider uppercase text-slate-400">
-                <span>भविष्य संकेत // FUTURE INDICATION</span>
+                <span>MARKET OUTLOOK // FUTURE INDICATION</span>
                 <span id="signalConfidence" class="text-cyan-300 font-bold">CONF: --%</span>
               </div>
               <div id="signalTitle" class="font-mono text-xs sm:text-sm font-bold text-cyan-300">
                 NEUTRAL CONSOLIDATION
               </div>
               <p id="signalDesc" class="text-[11px] text-slate-300 leading-snug">
-                बाज़ार में संतुलन बना हुआ है। सपोर्ट या रेजिस्टेंस पर वॉल्यूम डेल्टा, OBI और MTF कन्फ्लुएंस की प्रतीक्षा करें।
+                Market is balanced. Wait for Volume Delta, OBI, and MTF confluence near key Support or Resistance.
               </p>
             </div>
           </div>
@@ -283,7 +319,7 @@
       </div>
 
       <!-- A2. MULTI-TIMEFRAME PREDICTIVE MACD SUB-CHARTS (1m | 5m | 15m | 4h) -->
-      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-3 sm:p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 class="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 flex items-center gap-2">
@@ -297,7 +333,7 @@
             <span class="text-emerald-400">◆ Cross</span>
             <span class="text-lime-300">◎ Imminent</span>
             <span class="text-cyan-300">▲</span><span class="text-fuchsia-400">▼ Dual Trend</span>
-            <button onclick="switchTab('formula')" class="px-2 py-0.5 rounded-md border border-lime-500/40 bg-lime-500/10 text-lime-300 hover:bg-lime-500/20 font-semibold transition">
+            <button onclick="switchTab('lab')" class="px-2 py-0.5 rounded-md border border-lime-500/40 bg-lime-500/10 text-lime-300 hover:bg-lime-500/20 font-semibold transition">
               ⚙️ FORMULA LAB →
             </button>
           </div>
@@ -363,7 +399,7 @@
       </div>
 
       <!-- B. 3-COLUMN SIDE-BY-SIDE VOLUME DELTA + CVD + OBI MATRIX (1m | 5m | 15m) -->
-      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-3 sm:p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h2 class="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 flex items-center gap-2">
             <span class="text-cyan-400">▸</span> MULTI-TIMEFRAME ORDER FLOW MATRIX
@@ -470,7 +506,7 @@
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="srCardsGrid"></div>
 
       <!-- D. [ 180° PROXIMITY RADAR ] SECTION — 3 SIDE-BY-SIDE RADARS (1m | 5m | 15m) -->
-      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-3 sm:p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <h2 class="font-mono text-xs sm:text-sm font-bold tracking-wider text-cyan-400">
@@ -543,15 +579,15 @@
     </section>
 
     <!-- ================================================================ -->
-    <!-- TAB 2: पैटर्न लाइब्रेरी (123 PATTERNS SIDE-BY-SIDE LIBRARY)     -->
+    <!-- TAB 2: PATTERN LIBRARY (123 PATTERNS SIDE-BY-SIDE LIBRARY)       -->
     <!-- ================================================================ -->
     <section id="viewLibrary" class="hidden space-y-4">
       <!-- Library Top Controls & Stats -->
-      <div class="glass-panel rounded-2xl p-4 space-y-3">
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-mono text-sm sm:text-base font-bold text-cyan-400">
-              पैटर्न लाइब्रेरी // 123 GEOMETRIC PATTERNS (58 BULLISH vs 65 BEARISH)
+              PATTERN LIBRARY // 123 GEOMETRIC PATTERNS (58 BULLISH vs 65 BEARISH)
             </h2>
             <p class="text-xs text-slate-400 mt-0.5">
               Overall % = <span class="text-cyan-300 font-mono">Sum(Passed Dot %) / Total Points</span> (0% if FAIL). Unreached points remain <span class="text-slate-200 font-semibold">Hollow Gray (AWAITING TEST)</span>. Click any pattern to view individual dot % &amp; pin to Main Chart.
@@ -595,7 +631,7 @@
       <!-- SIDE-BY-SIDE COMPARISON COLUMNS: BULLISH (LEFT) vs BEARISH (RIGHT) -->
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <!-- LEFT COLUMN: 58 BULLISH PATTERNS -->
-        <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-3 sm:p-4 space-y-3">
           <div class="flex items-center justify-between border-b border-emerald-500/30 pb-2">
             <h3 class="font-mono text-sm font-bold text-emerald-400 flex items-center gap-2">
               <span>▲</span> BULLISH STRUCTURES (58 PATTERNS: B-01 – B-58)
@@ -606,7 +642,7 @@
         </div>
 
         <!-- RIGHT COLUMN: 65 BEARISH PATTERNS -->
-        <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-3 sm:p-4 space-y-3">
           <div class="flex items-center justify-between border-b border-rose-500/30 pb-2">
             <h3 class="font-mono text-sm font-bold text-rose-400 flex items-center gap-2">
               <span>▼</span> BEARISH STRUCTURES (65 PATTERNS: S-01 – S-65)
@@ -619,15 +655,15 @@
     </section>
 
     <!-- ================================================================ -->
-    <!-- TAB 3: इतिहास लॉग (PATTERN HISTORY & LAST-POINT FAIL TRACKER)    -->
+    <!-- TAB 3: PATTERN HISTORY & LAST-POINT FAIL TRACKER                 -->
     <!-- ================================================================ -->
     <section id="viewHistory" class="hidden space-y-4">
       <!-- History Header & KPI Strip -->
-      <div class="glass-panel rounded-2xl p-4 space-y-4">
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-mono text-sm sm:text-base font-bold text-amber-400 flex items-center gap-2">
-              <span>📜</span> इतिहास लॉग // PATTERN HISTORY &amp; LAST-POINT FAIL TRACKER
+              <span>📜</span> HISTORY LOG // PATTERN HISTORY &amp; LAST-POINT FAIL TRACKER
             </h2>
             <p class="text-xs text-slate-400 mt-0.5">
               Automatically saves every completed <span class="text-emerald-300 font-semibold">WINNING PATTERN</span> and every <span class="text-rose-400 font-semibold">FAILED AT LAST POINT</span> event to <span class="font-mono text-cyan-300">localStorage</span>. Same-day/recent repeat failures trigger automatic warnings on the Main Chart &amp; Library.
@@ -707,7 +743,7 @@
       </div>
 
       <!-- Detailed History Table -->
-      <div class="glass-panel rounded-2xl p-3 sm:p-4">
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-3 sm:p-4">
         <div class="overflow-x-auto rounded-xl border border-[#1a2634] bg-[#0a1017]">
           <table class="w-full text-left font-mono text-xs">
             <thead class="bg-[#0e161f] text-slate-400 border-b border-[#1a2634] text-[10.5px]">
@@ -729,16 +765,16 @@
     </section>
 
     <!-- ================================================================ -->
-    <!-- TAB 4: फ़ॉर्मूला लैब (ALL 8 ENGINES)                             -->
+    <!-- TAB 4: FORMULA LAB (ALL ENGINES)                                 -->
     <!-- ================================================================ -->
     <section id="viewLab" class="hidden space-y-4">
-      <div class="glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="font-mono text-sm sm:text-base font-bold text-cyan-400">
-            फ़ॉर्मूला लैब // BACKEND ENGINE, MTF INDICATORS, ML &amp; 123-PATTERN CONFLUENCE LAB
+            FORMULA LAB // BACKEND ENGINE, MTF INDICATORS, ML &amp; 123-PATTERN CONFLUENCE LAB
           </h2>
           <p class="text-xs text-slate-400 mt-0.5">
-            यहाँ किए गए किसी भी बदलाव का असर तुरंत मुख्य टर्मिनल (Main Terminal), पैटर्न लाइब्रेरी (123), रडार और कॉन्फ्लुएंस विनर पर दिखाई देगा।
+            Any parameter change here updates the Main Terminal, 123 Pattern Library, Radar, Time Machine, and Confluence Winner in real time.
           </p>
         </div>
         <button onclick="resetLabDefaults()" class="font-mono text-xs px-3 py-1.5 rounded-lg border border-slate-600 hover:border-cyan-400 text-slate-300 hover:text-cyan-300 transition">
@@ -748,7 +784,7 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- 1. Order Book Imbalance (OBI) Engine -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-mono text-sm font-bold text-emerald-400">1. ORDER BOOK IMBALANCE (OBI) ENGINE</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">LIVE DEPTH</span>
@@ -773,14 +809,14 @@
           <div class="space-y-3 pt-1">
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Order Book Depth Levels (गहराई स्तर)</span>
+                <span class="text-slate-300">Order Book Depth Levels</span>
                 <span id="valObiDepth" class="text-cyan-400 font-bold">20 Levels</span>
               </div>
               <input id="slObiDepth" type="range" min="5" max="50" step="5" value="20" class="w-full" oninput="updateLabParam('obiDepth', +this.value)" />
             </div>
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Imbalance Alert Threshold (सिग्नल सीमा)</span>
+                <span class="text-slate-300">Imbalance Alert Threshold</span>
                 <span id="valObiThresh" class="text-amber-400 font-bold">18%</span>
               </div>
               <input id="slObiThresh" type="range" min="5" max="50" step="1" value="18" class="w-full" oninput="updateLabParam('obiThreshold', +this.value)" />
@@ -789,7 +825,7 @@
         </div>
 
         <!-- 2. Volume Delta & Footprint Engine -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-mono text-sm font-bold text-cyan-400">2. VOLUME DELTA &amp; FOOTPRINT ENGINE</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">CANDLE PRESSURE</span>
@@ -802,14 +838,14 @@
           <div class="space-y-3">
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Absorption Threshold (रिवर्सल पहचान सीमा)</span>
+                <span class="text-slate-300">Absorption Threshold (Reversal Detection)</span>
                 <span id="valAbsThresh" class="text-cyan-400 font-bold">35%</span>
               </div>
               <input id="slAbsThresh" type="range" min="15" max="75" step="5" value="35" class="w-full" oninput="updateLabParam('absorptionThreshold', +this.value)" />
             </div>
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Delta Coloring Sensitivity (कैंडल हाइलाइट)</span>
+                <span class="text-slate-300">Delta Coloring Sensitivity (Candle Highlight)</span>
                 <span id="valDeltaSens" class="text-amber-400 font-bold">25%</span>
               </div>
               <input id="slDeltaSens" type="range" min="10" max="60" step="5" value="25" class="w-full" oninput="updateLabParam('deltaSensitivity', +this.value)" />
@@ -818,25 +854,25 @@
         </div>
 
         <!-- 3. VPVR Buy/Sell Split Engine -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-mono text-sm font-bold text-amber-400">3. VPVR BUY/SELL SPLIT ENGINE</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">GREEN / RED SPLIT</span>
           </div>
           <p class="text-xs text-slate-400">
-            प्रत्येक प्राइस बिन (Price Level) पर कुल वॉल्यूम को <span class="text-emerald-300">Light Green (Buy)</span> और <span class="text-rose-300">Light Red (Sell)</span> में विभाजित कर Point of Control (POC) निकाला जाता है।
+            Total volume at each price bin is split into <span class="text-emerald-300">Light Green (Buy)</span> and <span class="text-rose-300">Light Red (Sell)</span> to compute the Point of Control (POC).
           </p>
           <div class="space-y-3">
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Number of Price Bins (बिन की संख्या)</span>
+                <span class="text-slate-300">Number of Price Bins</span>
                 <span id="valVpvrBins" class="text-cyan-400 font-bold">28 Bins</span>
               </div>
               <input id="slVpvrBins" type="range" min="15" max="50" step="1" value="28" class="w-full" oninput="updateLabParam('vpvrBins', +this.value)" />
             </div>
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Buy/Sell Histogram Opacity (पारदर्शिता)</span>
+                <span class="text-slate-300">Buy/Sell Histogram Opacity</span>
                 <span id="valVpvrOpacity" class="text-emerald-400 font-bold">55%</span>
               </div>
               <input id="slVpvrOpacity" type="range" min="20" max="90" step="5" value="55" class="w-full" oninput="updateLabParam('vpvrOpacity', +this.value)" />
@@ -845,7 +881,7 @@
         </div>
 
         <!-- 4. 5-Formula Consensus S/R & MTF Momentum -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-mono text-sm font-bold text-purple-400">4. 5-FORMULA CONSENSUS S/R &amp; MTF MOMENTUM</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">WEIGHTED MODEL</span>
@@ -889,7 +925,7 @@
           </div>
           <div class="pt-2 border-t border-[#1a2634]">
             <div class="flex justify-between font-mono text-xs mb-1">
-              <span class="text-slate-300">MTF Momentum Lookback (मोमेंटम अवधि)</span>
+              <span class="text-slate-300">MTF Momentum Lookback</span>
               <span id="valMtfPeriod" class="text-purple-300 font-bold">8 Candles</span>
             </div>
             <input id="slMtfPeriod" type="range" min="4" max="20" step="1" value="8" class="w-full" oninput="updateLabParam('mtfLookback', +this.value)" />
@@ -897,7 +933,7 @@
         </div>
 
         <!-- 5. MTF RSI & MACD FORMULA ENGINE -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-mono text-sm font-bold text-cyan-400">5. MTF RSI &amp; MACD FORMULA ENGINE</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">1m / 5m / 15m / 4h</span>
@@ -924,7 +960,7 @@
           <div class="space-y-3">
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">RSI Period (अवधि)</span>
+                <span class="text-slate-300">RSI Period</span>
                 <span id="valRsiPeriod" class="text-cyan-400 font-bold">14</span>
               </div>
               <input id="slRsiPeriod" type="range" min="7" max="21" step="1" value="14" class="w-full" oninput="updateLabParam('rsiPeriod', +this.value)" />
@@ -957,7 +993,7 @@
         </div>
 
         <!-- 5B. PREDICTIVE MACD CROSSOVER & DUAL-SLOPE TREND ENGINE -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4 border border-lime-500/25">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4 border border-lime-500/25">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h3 class="font-mono text-sm font-bold text-lime-400">5B. PREDICTIVE MACD SLOPE &amp; DUAL-TREND ENGINE</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-lime-500/15 text-lime-300 border border-lime-500/30">TOP RAIL + MTF MACD</span>
@@ -986,7 +1022,7 @@
 
           <div class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
-              <span class="text-slate-300">Sensitivity Preset (संवेदनशीलता):</span>
+              <span class="text-slate-300">Sensitivity Preset:</span>
               <div class="flex items-center gap-1.5">
                 <button onclick="setMacdPredPreset('scalp')" id="macdPredPre_scalp" class="macd-pred-pre-btn px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-400 text-[11px]">SCALP</button>
                 <button onclick="setMacdPredPreset('balanced')" id="macdPredPre_balanced" class="macd-pred-pre-btn px-2 py-1 rounded-md border border-lime-500/50 bg-lime-500/15 text-lime-300 text-[11px] font-bold">BALANCED</button>
@@ -997,14 +1033,14 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <div class="flex justify-between font-mono text-xs mb-1">
-                  <span class="text-slate-300">Imminent Min Slope Angle (ढलान ∠)</span>
+                  <span class="text-slate-300">Imminent Min Slope Angle (∠)</span>
                   <span id="valMacdSlopeThresh" class="text-lime-400 font-bold">18°</span>
                 </div>
                 <input id="slMacdSlopeThresh" type="range" min="5" max="60" step="1" value="18" class="w-full" oninput="updateLabParam('macdSlopeThresh', +this.value)" />
               </div>
               <div>
                 <div class="flex justify-between font-mono text-xs mb-1">
-                  <span class="text-slate-300">Max Convergence Distance (दूरी %)</span>
+                  <span class="text-slate-300">Max Convergence Distance (%)</span>
                   <span id="valMacdConvDist" class="text-amber-400 font-bold">18%</span>
                 </div>
                 <input id="slMacdConvDist" type="range" min="5" max="45" step="1" value="18" class="w-full" oninput="updateLabParam('macdConvDist', +this.value)" />
@@ -1014,14 +1050,14 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <div class="flex justify-between font-mono text-xs mb-1">
-                  <span class="text-slate-300">Dual-Line Trend Slope (एक साथ ढलान ∠)</span>
+                  <span class="text-slate-300">Dual-Line Trend Slope (Synced ∠)</span>
                   <span id="valMacdDualSlope" class="text-cyan-400 font-bold">16°</span>
                 </div>
                 <input id="slMacdDualSlope" type="range" min="5" max="55" step="1" value="16" class="w-full" oninput="updateLabParam('macdDualSlopeThresh', +this.value)" />
               </div>
               <div>
                 <div class="flex justify-between font-mono text-xs mb-1">
-                  <span class="text-slate-300">Slope Lookback (कैंडल विंडो)</span>
+                  <span class="text-slate-300">Slope Lookback (Candle Window)</span>
                   <span id="valMacdSlopeLb" class="text-sky-400 font-bold">2 Candles</span>
                 </div>
                 <input id="slMacdSlopeLb" type="range" min="1" max="5" step="1" value="2" class="w-full" oninput="updateLabParam('macdSlopeLookback', +this.value)" />
@@ -1045,8 +1081,66 @@
           </div>
         </div>
 
+        <!-- 5C. TIME MACHINE 50x TRADE SIMULATION ENGINE -->
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4 border border-violet-500/30">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-mono text-sm font-bold text-violet-400">5C. TIME MACHINE (50x PRE-TRADE SIMULATOR)</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/30">REAL-DATA REPLAY</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#060a0e] border border-[#162230] font-mono text-[11px] text-slate-300 space-y-1 overflow-x-auto">
+            <div><span class="text-violet-300">EV ($)</span> = P(TP)·NetWin − P(SL)·NetLoss + P(TO)·AvgTO − RoundTripFee</div>
+            <div><span class="text-cyan-300">Paths</span> = Historical Regime Replay (50 closest setups) / Block-Bootstrap (real kline blocks)</div>
+          </div>
+          <div class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between font-mono text-xs mb-1">
+                  <span class="text-slate-300">Replay Runs</span>
+                  <span id="valTmRuns" class="text-violet-300 font-bold">50 Runs</span>
+                </div>
+                <input id="slLabTmRuns" type="range" min="20" max="100" step="10" value="50" class="w-full" oninput="updateLabParam('tmRuns', +this.value)" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-xs mb-1">
+                  <span class="text-slate-300">Horizon (Future Candles)</span>
+                  <span id="valTmHorizon" class="text-cyan-300 font-bold">25 Candles</span>
+                </div>
+                <input id="slLabTmHorizon" type="range" min="10" max="60" step="5" value="25" class="w-full" oninput="updateLabParam('tmHorizon', +this.value)" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <div class="flex justify-between font-mono text-[11px] mb-1">
+                  <span class="text-slate-300">Drift Weight</span>
+                  <span id="valTmDrift" class="text-lime-300 font-bold">25%</span>
+                </div>
+                <input id="slLabTmDrift" type="range" min="0" max="100" step="5" value="25" class="w-full" oninput="updateLabParam('tmDriftWeight', +this.value)" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-[11px] mb-1">
+                  <span class="text-slate-300">Fee + Slippage</span>
+                  <span id="valTmFee" class="text-amber-300 font-bold">0.10%</span>
+                </div>
+                <input id="slLabTmFee" type="range" min="0" max="0.30" step="0.02" value="0.10" class="w-full" oninput="updateLabParam('tmFeePct', +this.value)" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-[11px] mb-1">
+                  <span class="text-slate-300">Block Size</span>
+                  <span id="valTmBlock" class="text-sky-300 font-bold">3 Candles</span>
+                </div>
+                <input id="slLabTmBlock" type="range" min="2" max="6" step="1" value="3" class="w-full" oninput="updateLabParam('tmBlockSize', +this.value)" />
+              </div>
+            </div>
+            <div class="pt-1 flex justify-end">
+              <button onclick="switchTab('timemachine')" class="font-mono text-[11px] px-3 py-1.5 rounded-lg border border-violet-500/50 bg-violet-500/15 text-violet-300 hover:bg-violet-500/25 font-bold transition">
+                OPEN 50x TIME MACHINE STUDIO →
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- 6. LIGHT ML SIGNAL & NOISE-FILTER ENGINE -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-mono text-sm font-bold text-fuchsia-400">6. LIGHT ML SIGNAL &amp; NOISE-FILTER ENGINE</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30">CLOSED-CANDLE ONLY</span>
@@ -1057,14 +1151,14 @@
           <div class="space-y-3">
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Signal Cooldown (नॉइज़ फ़िल्टर अंतराल)</span>
+                <span class="text-slate-300">Signal Cooldown (Noise Filter Gap)</span>
                 <span id="valMlCooldown" class="text-cyan-400 font-bold">8 Candles</span>
               </div>
               <input id="slMlCooldown" type="range" min="4" max="20" step="1" value="8" class="w-full" oninput="updateLabParam('mlCooldown', +this.value)" />
             </div>
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Min ML Confidence Threshold (न्यूनतम विश्वास %)</span>
+                <span class="text-slate-300">Min ML Confidence Threshold (%)</span>
                 <span id="valMlMinConf" class="text-amber-400 font-bold">74%</span>
               </div>
               <input id="slMlMinConf" type="range" min="60" max="90" step="1" value="74" class="w-full" oninput="updateLabParam('mlMinConf', +this.value)" />
@@ -1096,7 +1190,7 @@
         </div>
 
         <!-- 7. GEOMETRIC PATTERN ENGINE (123 PATTERNS DTW & PIVOT) -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-mono text-sm font-bold text-sky-400">7. GEOMETRIC PATTERN ENGINE (123 STRUCTURES)</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">PER-DOT ACCURACY</span>
@@ -1114,7 +1208,7 @@
             </div>
             <div>
               <div class="flex justify-between font-mono text-xs mb-1">
-                <span class="text-slate-300">Pivot Lookback Window (पिवट संवेदनशीलता)</span>
+                <span class="text-slate-300">Pivot Lookback Window (Sensitivity)</span>
                 <span id="valGeoPivot" class="text-amber-400 font-bold">28 Candles</span>
               </div>
               <input id="slGeoPivot" type="range" min="16" max="50" step="2" value="28" class="w-full" oninput="updateLabParam('geoLookback', +this.value)" />
@@ -1130,7 +1224,7 @@
         </div>
 
         <!-- 8. PER-TIMEFRAME CONFLUENCE WINNER & CONFLICT RESOLUTION MATRIX -->
-        <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-mono text-sm font-bold text-emerald-400">8. CONFLUENCE WINNER (<span id="labConfTfLabel" class="uppercase">1m</span> ONLY)</h3>
             <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">LIVE ARBITER</span>
@@ -1168,11 +1262,206 @@
         </div>
       </div>
     </section>
+    <!-- ==================== TAB 5: 50x TRADE SIMULATION ("TIME MACHINE") ==================== -->
+    <section id="viewTimeMachine" class="hidden space-y-4">
+      <!-- Top Header & Quick Actions -->
+      <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 border border-violet-500/30">
+        <div>
+          <h2 class="font-mono text-sm sm:text-base font-bold text-violet-300 flex items-center gap-2">
+            <span>⏱️</span> TRADE SIMULATION // "TIME MACHINE" (50x PRE-TRADE ENGINE)
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Replays your exact trade setup 50 times using real BTC volatility blocks &amp; historical regime matches before you commit capital.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 font-mono text-xs">
+          <button onclick="autoFillTimeMachineFromLive()" class="px-3 py-1.5 rounded-lg border border-cyan-500/50 bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 font-semibold transition">
+            ⚡ AUTO-FILL FROM LIVE S/R
+          </button>
+          <button onclick="animateTimeMachineReplay()" id="btnTmAnimate" class="px-3 py-1.5 rounded-lg border border-amber-500/50 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 font-semibold transition">
+            ▶ WATCH 50x REPLAY
+          </button>
+          <button onclick="runTimeMachineSimulation(true)" class="px-3.5 py-1.5 rounded-lg border border-violet-400 bg-violet-500/25 text-white hover:bg-violet-500/40 font-bold shadow-lg transition">
+            🎲 RUN 50x SIMULATION
+          </button>
+        </div>
+      </div>
+
+      <!-- Pre-Trade Verdict Banner -->
+      <div id="tmVerdictBanner" class="rounded-2xl p-3.5 border border-violet-500/40 bg-violet-500/10 flex flex-col md:flex-row md:items-center justify-between gap-2 font-mono">
+        <div class="flex items-center gap-2.5">
+          <span id="tmVerdictPill" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-violet-500/25 text-violet-200 border border-violet-400/50">READY</span>
+          <span id="tmVerdictText" class="text-xs sm:text-sm text-slate-200">Configure Entry, SL, and TP below, then run 50 replays to evaluate edge before entering.</span>
+        </div>
+        <span id="tmVerdictMeta" class="text-[11px] text-slate-400 shrink-0">TF: 1m · 50 Replays</span>
+      </div>
+
+      <!-- Main Grid: Left Trade Ticket + Right 50-Path Trajectory Canvas -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <!-- Trade Ticket (4 cols) -->
+        <div class="xl:col-span-4 glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-3.5">
+          <div class="flex items-center justify-between border-b border-[#1a2634] pb-2 font-mono">
+            <span class="text-xs font-bold text-slate-200">TRADE TICKET &amp; RISK PARAMS</span>
+            <span id="tmRrBadge" class="text-[11px] px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 font-bold">R:R 1 : 2.00</span>
+          </div>
+
+          <!-- Direction Toggle -->
+          <div class="grid grid-cols-2 gap-2 font-mono text-xs">
+            <button id="tmSideLongBtn" onclick="setTmSide('LONG')" class="py-2 rounded-xl border border-emerald-400 bg-emerald-500/20 text-emerald-300 font-bold transition">▲ LONG</button>
+            <button id="tmSideShortBtn" onclick="setTmSide('SHORT')" class="py-2 rounded-xl border border-[#1a2634] bg-[#0e161f] text-slate-400 hover:text-white font-bold transition">▼ SHORT</button>
+          </div>
+
+          <!-- Replay Mode Toggle -->
+          <div class="space-y-1">
+            <div class="font-mono text-[10.5px] text-slate-400">REPLAY ENGINE MODE</div>
+            <div class="grid grid-cols-2 gap-2 font-mono text-[11px]">
+              <button id="tmModeHistBtn" onclick="setTmMode('HIST_REPLAY')" class="py-1.5 px-2 rounded-lg border border-violet-400/70 bg-violet-500/20 text-violet-200 font-bold transition">HIST SETUP REPLAY</button>
+              <button id="tmModeBootBtn" onclick="setTmMode('BLOCK_BOOT')" class="py-1.5 px-2 rounded-lg border border-[#1a2634] bg-[#0e161f] text-slate-400 hover:text-white font-semibold transition">BLOCK BOOTSTRAP</button>
+            </div>
+          </div>
+
+          <!-- Entry & Capital -->
+          <div class="grid grid-cols-2 gap-2.5 font-mono-num text-xs">
+            <div>
+              <label class="block text-[10.5px] text-slate-400 mb-1">ENTRY PRICE ($)</label>
+              <input id="tmEntryInput" type="number" step="0.1" class="w-full px-2.5 py-1.5 rounded-lg bg-[#070b0f] border border-[#1a2634] text-white font-bold focus:border-cyan-400 outline-none" onchange="onTmInputChange()" />
+            </div>
+            <div>
+              <label class="block text-[10.5px] text-slate-400 mb-1">CAPITAL ($ USDT)</label>
+              <input id="tmCapitalInput" type="number" min="10" step="50" value="1000" class="w-full px-2.5 py-1.5 rounded-lg bg-[#070b0f] border border-[#1a2634] text-white font-bold focus:border-cyan-400 outline-none" onchange="onTmInputChange()" />
+            </div>
+          </div>
+
+          <!-- SL % Slider -->
+          <div>
+            <div class="flex justify-between font-mono text-xs mb-1">
+              <span class="text-rose-300">Stop Loss (SL)</span>
+              <span class="font-mono-num text-rose-400 font-bold"><span id="tmSlPctVal">0.35%</span> · $<span id="tmSlPriceVal">--</span></span>
+            </div>
+            <input id="slTmSlPct" type="range" min="0.05" max="3.00" step="0.02" value="0.35" class="w-full" oninput="onTmSliderChange('slPct', +this.value)" />
+          </div>
+
+          <!-- TP % Slider -->
+          <div>
+            <div class="flex justify-between font-mono text-xs mb-1">
+              <span class="text-emerald-300">Take Profit (TP)</span>
+              <span class="font-mono-num text-emerald-400 font-bold"><span id="tmTpPctVal">0.70%</span> · $<span id="tmTpPriceVal">--</span></span>
+            </div>
+            <input id="slTmTpPct" type="range" min="0.08" max="6.00" step="0.02" value="0.70" class="w-full" oninput="onTmSliderChange('tpPct', +this.value)" />
+          </div>
+
+          <!-- Leverage & Horizon -->
+          <div class="grid grid-cols-2 gap-3 pt-1 border-t border-[#1a2634]">
+            <div>
+              <div class="flex justify-between font-mono text-[11px] mb-1">
+                <span class="text-slate-300">Leverage</span>
+                <span id="tmLevVal" class="text-amber-300 font-bold">5x</span>
+              </div>
+              <input id="slTmLev" type="range" min="1" max="25" step="1" value="5" class="w-full" oninput="onTmSliderChange('leverage', +this.value)" />
+            </div>
+            <div>
+              <div class="flex justify-between font-mono text-[11px] mb-1">
+                <span class="text-slate-300">Horizon</span>
+                <span id="tmHorVal" class="text-cyan-300 font-bold">25c</span>
+              </div>
+              <input id="slTmHorizon" type="range" min="10" max="60" step="5" value="25" class="w-full" oninput="onTmSliderChange('horizon', +this.value)" />
+            </div>
+          </div>
+
+          <!-- Runs Slider -->
+          <div>
+            <div class="flex justify-between font-mono text-[11px] mb-1">
+              <span class="text-slate-300">Simulated Replays</span>
+              <span id="tmRunsVal" class="text-violet-300 font-bold">50 Runs</span>
+            </div>
+            <input id="slTmRuns" type="range" min="20" max="100" step="10" value="50" class="w-full" oninput="onTmSliderChange('runs', +this.value)" />
+          </div>
+
+          <!-- Liq / Position Readout -->
+          <div class="rounded-xl bg-[#070b0f] border border-[#162230] p-2.5 font-mono-num text-[11px] flex flex-wrap justify-between gap-2 text-slate-400">
+            <span>Pos Size: <strong id="tmPosSize" class="text-slate-200">$5,000</strong></span>
+            <span>Est. Fee: <strong id="tmFeeCost" class="text-amber-300">$5.00</strong></span>
+            <span>Est. Liq: <strong id="tmLiqPrice" class="text-rose-400">$--</strong></span>
+          </div>
+        </div>
+
+        <!-- 50-Path Trajectory Canvas (8 cols) -->
+        <div class="xl:col-span-8 glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+            <span class="font-bold text-slate-100">▸ 50-RUN FORWARD TRAJECTORY FAN (<span id="tmCanvasTf" class="text-cyan-300">1M</span>)</span>
+            <div class="flex flex-wrap items-center gap-3 text-[10.5px]">
+              <span class="text-emerald-400">― TP Hit</span>
+              <span class="text-rose-400">― SL Hit</span>
+              <span class="text-cyan-300 font-bold">━ Median</span>
+              <span class="text-emerald-300">┄ Best 10%</span>
+              <span class="text-rose-300">┄ Worst 10%</span>
+            </div>
+          </div>
+          <div class="relative w-full h-[320px] sm:h-[360px] rounded-xl overflow-hidden bg-[#060a0e] border border-[#162230]">
+            <canvas id="tmPathsCanvas" class="w-full h-full block"></canvas>
+          </div>
+          <!-- 6-Card Risk Scorecard -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 font-mono-num">
+            <div class="rounded-xl bg-[#0a1017] border border-emerald-500/30 p-2.5">
+              <div class="text-[10px] text-slate-400">WIN RATE (TP)</div>
+              <div id="tmStatWinRate" class="text-base font-bold text-emerald-400 mt-0.5">--%</div>
+              <div id="tmStatWinCnt" class="text-[10px] text-slate-500">0 / 50</div>
+            </div>
+            <div class="rounded-xl bg-[#0a1017] border border-rose-500/30 p-2.5">
+              <div class="text-[10px] text-slate-400">STOP-OUT (SL)</div>
+              <div id="tmStatLossRate" class="text-base font-bold text-rose-400 mt-0.5">--%</div>
+              <div id="tmStatLossCnt" class="text-[10px] text-slate-500">0 / 50</div>
+            </div>
+            <div class="rounded-xl bg-[#0a1017] border border-slate-700 p-2.5">
+              <div class="text-[10px] text-slate-400">TIMEOUT / OPEN</div>
+              <div id="tmStatToRate" class="text-base font-bold text-slate-300 mt-0.5">--%</div>
+              <div id="tmStatToCnt" class="text-[10px] text-slate-500">0 / 50</div>
+            </div>
+            <div class="rounded-xl bg-[#0a1017] border border-cyan-500/30 p-2.5">
+              <div class="text-[10px] text-slate-400">NET EV (AFTER FEE)</div>
+              <div id="tmStatEv" class="text-base font-bold text-cyan-300 mt-0.5">$0.00</div>
+              <div id="tmStatEvR" class="text-[10px] text-slate-500">0.00R</div>
+            </div>
+            <div class="rounded-xl bg-[#0a1017] border border-amber-500/30 p-2.5">
+              <div class="text-[10px] text-slate-400">PROFIT FACTOR</div>
+              <div id="tmStatPf" class="text-base font-bold text-amber-300 mt-0.5">0.00</div>
+              <div id="tmStatAvgBars" class="text-[10px] text-slate-500">Avg --c</div>
+            </div>
+            <div class="rounded-xl bg-[#0a1017] border border-fuchsia-500/30 p-2.5">
+              <div class="text-[10px] text-slate-400">WORST PATH / MAE</div>
+              <div id="tmStatWorst" class="text-base font-bold text-fuchsia-300 mt-0.5">$0.00</div>
+              <div id="tmStatMae" class="text-[10px] text-slate-500">MAE --%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row: 50-Tile Outcome Grid + PnL Distribution Histogram -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-7 glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between font-mono text-xs">
+            <span class="font-bold text-slate-200">▸ 50-REPLAY OUTCOME MATRIX (TAP ANY TILE TO HIGHLIGHT PATH)</span>
+            <span id="tmSelectedRunInfo" class="text-[11px] text-violet-300">All 50 runs shown</span>
+          </div>
+          <div id="tmOutcomeGrid" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 font-mono-num text-[10px]"></div>
+        </div>
+
+        <div class="lg:col-span-5 glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between font-mono text-xs">
+            <span class="font-bold text-slate-200">▸ NET PNL DISTRIBUTION ($)</span>
+            <span id="tmBestWorstRange" class="text-[10.5px] text-slate-400">Range: --</span>
+          </div>
+          <div class="relative w-full h-[185px] rounded-xl overflow-hidden bg-[#060a0e] border border-[#162230]">
+            <canvas id="tmPnlDistCanvas" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- ==================== PATTERN INSPECTOR MODAL ==================== -->
   <div id="patternModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) closePatternModal()">
-    <div class="glass-panel rounded-2xl max-w-3xl w-full p-5 space-y-4 border border-cyan-500/40 max-h-[92vh] overflow-y-auto">
+    <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl max-w-3xl w-full p-5 space-y-4 border border-cyan-500/40 max-h-[92vh] overflow-y-auto">
       <div class="flex items-start justify-between gap-3 border-b border-[#1a2634] pb-3">
         <div>
           <div class="flex items-center gap-2">
@@ -1220,7 +1509,7 @@
 
   <!-- ==================== BINANCE CONNECTION DIAGNOSTICS MODAL ==================== -->
   <div id="connDiagModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) closeConnDiagModal()">
-    <div class="glass-panel rounded-2xl max-w-2xl w-full p-5 space-y-4 border border-cyan-500/40 max-h-[90vh] overflow-y-auto">
+    <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl max-w-2xl w-full p-5 space-y-4 border border-cyan-500/40 max-h-[90vh] overflow-y-auto">
       <div class="flex items-start justify-between gap-3 border-b border-[#1a2634] pb-3">
         <div>
           <h3 class="font-mono text-sm sm:text-base font-bold text-cyan-300">📡 BINANCE CONNECTION DIAGNOSTICS</h3>
@@ -1272,7 +1561,7 @@
 
   <!-- ==================== GOOGLE SHEET SYNC CONFIG MODAL ==================== -->
   <div id="sheetConfigModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) closeSheetConfigModal()">
-    <div class="glass-panel rounded-2xl max-w-xl w-full p-5 space-y-4 border border-cyan-500/40">
+    <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-2xl max-w-xl w-full p-5 space-y-4 border border-cyan-500/40">
       <div class="flex items-start justify-between gap-3 border-b border-[#1a2634] pb-3">
         <div>
           <h3 class="font-mono text-sm sm:text-base font-bold text-cyan-300">⚙️ GOOGLE SHEET / APPS SCRIPT SYNC URL</h3>
@@ -1302,6 +1591,6 @@
   <div id="globalSheetToast" class="hidden fixed bottom-4 right-4 left-4 sm:left-auto max-w-md z-50 rounded-xl px-3.5 py-2.5 font-mono text-xs border shadow-2xl backdrop-blur-md"></div>
 
   <!-- ==================== APPLICATION JAVASCRIPT ==================== -->
-  <script src="app.js"></script>
+  <script src="./app.js" onerror="var b=document.getElementById('statusBadge');if(b){b.textContent='ERROR: app.js MISSING';b.style.color='#f87171';}"></script>
 </body>
 </html>

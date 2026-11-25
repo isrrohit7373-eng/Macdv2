@@ -1,15 +1,9 @@
-# BTC/USDT Radar Terminal v5 + Predictive MACD Slope Engine
+# BTC/USDT Radar Terminal v7 (100% English — Separated HTML, CSS, JS)
 
-Standalone static web app ready for **GitHub Pages** (zero build step required).
-
-## Files
-- `index.html` — Main layout, charts, Multi-Timeframe Predictive MACD Matrix (`1m`, `5m`, `15m`, `4h`), and Formula Lab UI
-- `styles.css` — Terminal dark theme, scrollbars, sliders, and animations
-- `app.js` — Binance REST/WebSocket + Simulation engine, 123 Geometric Pattern Engine, and Predictive MACD Slope / Convergence / Dual-Trend engine
+## Files Included
+- `index.html` — Main Terminal, Top-of-Chart MTF Buy/Sell Strength & Consolidated Radar Signal, 4-TF Predictive MACD Matrix, 123 Pattern Library, Pattern History, 50x Time Machine, and Formula Lab
+- `styles.css` — Dark terminal styling, scrollbars, sliders, and animations
+- `app.js` — Live exchange/simulation feed, Predictive MACD Slope & Dual-Trend Engine, MTF Buy/Sell Strength, 123 Geo Engine, and 50x Time Machine simulator
 
 ## Deploy on GitHub Pages
-1. Create a new repository on GitHub (or open your existing repo).
-2. Upload `index.html`, `styles.css`, and `app.js` to the root of the repository (or push via `git`).
-3. Open **Settings → Pages**.
-4. Under **Build and deployment**, select **Deploy from a branch**, choose `main` and `/ (root)`, and click **Save**.
-5. After ~1 minute, open your live GitHub Pages URL (`https://<username>.github.io/<repo-name>/`).
+Upload **all three files** (`index.html`, `styles.css`, and `app.js`) directly into the root folder of your `Macd` repository, then enable **Settings → Pages → Deploy from a branch (`main` / `/root`)**.
