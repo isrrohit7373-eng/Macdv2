@@ -137,6 +137,7 @@
         mlSignals: true,
         geoPattern: true,
         macdPredict: true,
+        timeMachine: true,
       },
       lab: {
         obiDepth: 20,
@@ -171,6 +172,26 @@
         cwMatch: 50,
         cwSr: 25,
         cwFlow: 25,
+        tmRuns: 50,
+        tmHorizon: 25,
+        tmDriftWeight: 25,
+        tmFeePct: 0.10,
+        tmBlockSize: 3,
+      },
+      timeMachine: {
+        side: 'LONG',
+        mode: 'HIST_REPLAY',
+        entry: 0,
+        slPct: 0.35,
+        tpPct: 0.70,
+        capital: 1000,
+        leverage: 5,
+        runs: 50,
+        horizon: 25,
+        selectedRunIdx: -1,
+        animStep: null,
+        animTimer: null,
+        result: null,
       },
       radar: { range: 250, autoRange: true, sweepAngle: 0 },
       candlesByTf: { '1m': [], '5m': [], '15m': [], '4h': [] },
@@ -1905,29 +1926,29 @@
 
       let stateClass = 'border-cyan-500/30 bg-cyan-500/10', titleClass = 'text-cyan-300';
       let sigTitle = 'NEUTRAL CONSOLIDATION';
-      let sigDesc = 'बाज़ार में संतुलन बना हुआ है। सपोर्ट/रेजिस्टेंस पर क्लोज़्ड-कैंडल ML सिग्नल या MTF कन्फ्लुएंस का इंतज़ार करें।';
+      let sigDesc = 'Market is balanced. Wait for a closed-candle ML signal or MTF confluence near Support/Resistance.';
       let confidence = avgConf;
 
       if (nearS1 && last.deltaPct >= absThresh * 0.45 && obi > obiThresh * 0.35) {
         sigTitle = 'BULLISH ABSORPTION (Reversal Signal)';
-        sigDesc = 'सपोर्ट S1 पर सेलिंग प्रेशर अवशोषित हो रहा है और खरीदार (Buy Delta + Bid OBI) हावी हो रहे हैं। ऊपर बाउंस की प्रबल संभावना।';
+        sigDesc = 'Selling pressure is being absorbed at Support S1 while buyers (Buy Delta + Bid OBI) take control. High probability of an upward bounce.';
         stateClass = 'border-emerald-500/60 bg-emerald-500/15'; titleClass = 'text-emerald-300';
         confidence = Math.min(95, Math.max(avgConf, 76));
         playSonarPing(true);
       } else if (nearR1 && last.deltaPct <= -absThresh * 0.45 && obi < -obiThresh * 0.35) {
         sigTitle = 'BEARISH EXHAUSTION (Reversal Signal)';
-        sigDesc = 'रेजिस्टेंस R1 पर खरीदारी कमज़ोर पड़ रही है और सेलर्स (Sell Delta + Ask OBI) दबाव बना रहे हैं। गिरावट का संकेत।';
+        sigDesc = 'Buying momentum is fading at Resistance R1 while sellers (Sell Delta + Ask OBI) build pressure. Potential downward reversal.';
         stateClass = 'border-rose-500/60 bg-rose-500/15'; titleClass = 'text-rose-300';
         confidence = Math.min(95, Math.max(avgConf, 76));
         playSonarPing(true);
       } else if (bullCount >= 2 && obi >= obiThresh * 0.5) {
         sigTitle = `MTF BULLISH CONFLUENCE (${bullCount}/3 TFs)`;
-        sigDesc = `1m/5m/15m टाइमफ्रेम में RSI/MACD, ऑर्डर बुक (+${obi.toFixed(1)}%) और ML मोमेंटम तेज़ी का समर्थन कर रहे हैं।`;
+        sigDesc = `Across 1m/5m/15m timeframes, RSI/MACD, Order Book (+${obi.toFixed(1)}%), and ML momentum support bullish continuation.`;
         stateClass = 'border-emerald-500/45 bg-emerald-500/10'; titleClass = 'text-emerald-400';
         confidence = Math.min(92, Math.max(avgConf, 70));
       } else if (bearCount >= 2 && obi <= -obiThresh * 0.5) {
         sigTitle = `MTF BEARISH CONFLUENCE (${bearCount}/3 TFs)`;
-        sigDesc = `1m/5m/15m टाइमफ्रेम में RSI/MACD, ऑर्डर बुक (${obi.toFixed(1)}%) और ML मोमेंटम मंदी का दबाव दिखा रहे हैं।`;
+        sigDesc = `Across 1m/5m/15m timeframes, RSI/MACD, Order Book (${obi.toFixed(1)}%), and ML momentum signal bearish pressure.`;
         stateClass = 'border-rose-500/45 bg-rose-500/10'; titleClass = 'text-rose-400';
         confidence = Math.min(92, Math.max(avgConf, 70));
       }
@@ -2409,6 +2430,78 @@
         ctx.strokeRect(W - pad.right - pw - 8, 8, pw, 18);
         ctx.fillStyle = obiColor;
         ctx.fillText(pillText, W - pad.right - pw - 1, 20);
+      }
+
+      // 50x Time Machine Right-Side Future Projection Cone (Zero Candle Clutter)
+      if (STATE.layers.timeMachine && STATE.timeMachine.result && STATE.timeMachine.result.tf === tf) {
+        const res = STATE.timeMachine.result;
+        const coneStartX = liveCandleX;
+        const coneW = Math.max(46, projectionW - 6);
+        const coneX = (s) => coneStartX + (s / Math.max(1, res.horizon)) * coneW;
+
+        ctx.save();
+        // Faint fan of simulated paths strictly in projection zone
+        res.paths.forEach((p) => {
+          ctx.strokeStyle = p.outcome === 'TP' ? 'rgba(16, 185, 129, 0.14)' : p.outcome === 'SL' ? 'rgba(239, 68, 68, 0.14)' : 'rgba(148, 163, 184, 0.12)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          p.pts.forEach((val, s) => {
+            const px = coneX(s), py = Math.max(pad.top, Math.min(H - pad.bottom, yOf(val)));
+            if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          });
+          ctx.stroke();
+        });
+
+        // P90, P10, and Median curves
+        const drawMiniCone = (arr, col, lw, dash) => {
+          ctx.save();
+          ctx.strokeStyle = col; ctx.lineWidth = lw;
+          if (dash) ctx.setLineDash(dash);
+          ctx.beginPath();
+          arr.forEach((val, s) => {
+            const px = coneX(s), py = Math.max(pad.top, Math.min(H - pad.bottom, yOf(val)));
+            if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          });
+          ctx.stroke();
+          ctx.restore();
+        };
+        drawMiniCone(res.p90Path, 'rgba(52, 211, 153, 0.8)', 1.2, [3, 2]);
+        drawMiniCone(res.p10Path, 'rgba(251, 113, 133, 0.8)', 1.2, [3, 2]);
+        drawMiniCone(res.medianPath, '#a78bfa', 2.0, null);
+
+        // Compact 50x Cone Win% tag in projection zone
+        const endMedY = Math.max(pad.top + 12, Math.min(H - pad.bottom - 12, yOf(res.medianPath[res.medianPath.length - 1])));
+        ctx.font = '700 9px "JetBrains Mono", monospace';
+        const tagTxt = `50x ${res.winRate.toFixed(0)}%W`;
+        const tw = ctx.measureText(tagTxt).width + 8;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.fillRect(coneStartX + 4, endMedY - 8, tw, 14);
+        ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 0.9;
+        ctx.strokeRect(coneStartX + 4, endMedY - 8, tw, 14);
+        ctx.fillStyle = '#ddd6fe';
+        ctx.fillText(tagTxt, coneStartX + 8, endMedY + 2);
+        ctx.restore();
+      }
+
+      // Consolidated Radar Signal Pill directly on Top of Main Chart Canvas
+      if (STATE.mtfStrength) {
+        const ms = STATE.mtfStrength;
+        const isBuy = ms.overallDir === 'BUY', isSell = ms.overallDir === 'SELL';
+        const rColor = isBuy ? '#10b981' : isSell ? '#ef4444' : '#94a3b8';
+        const rBg = isBuy ? 'rgba(6, 78, 59, 0.90)' : isSell ? 'rgba(127, 29, 29, 0.90)' : 'rgba(15, 23, 42, 0.90)';
+        const rTxt = `RADAR: ${isBuy ? '▲ BUY' : isSell ? '▼ SELL' : '● NEUTRAL'} ${ms.overallPct}% · DOM ${ms.dominant.tf.toUpperCase()} (${ms.domPct}%)`;
+        ctx.save();
+        ctx.font = '700 10px "JetBrains Mono", monospace';
+        const rw = ctx.measureText(rTxt).width + 14;
+        const rx = Math.max(pad.left + 6, W - pad.right - rw - 8);
+        const ry = STATE.layers.obi ? 30 : 8;
+        ctx.fillStyle = rBg;
+        ctx.fillRect(rx, ry, rw, 18);
+        ctx.strokeStyle = rColor; ctx.lineWidth = 1.1;
+        ctx.strokeRect(rx, ry, rw, 18);
+        ctx.fillStyle = isBuy ? '#6ee7b7' : isSell ? '#fca5a5' : '#cbd5e1';
+        ctx.fillText(rTxt, rx + 7, ry + 12.5);
+        ctx.restore();
       }
 
       // Live Price Line
@@ -3108,6 +3201,156 @@
     /*************************************************************************
      * 11. MASTER UI RENDERER (HEADER, TRACKER BAR, MTF STRIP, MATRIX, LAB)
      *************************************************************************/
+    /*************************************************************************
+     * 10B. ALL-TIMEFRAME BUY/SELL STRENGTH & CONSOLIDATED RADAR SIGNAL
+     *************************************************************************/
+    function computeMtfBuySellStrength() {
+      const weights = { '1m': 0.15, '5m': 0.25, '15m': 0.30, '4h': 0.30 };
+      const perTf = {};
+      let wBuySum = 0, wTot = 0;
+
+      TFS.forEach((tf) => {
+        const candles = STATE.candlesByTf[tf] || [];
+        const a = STATE.analyticsByTf[tf];
+        if (!candles.length || !a) {
+          perTf[tf] = { tf, buyPct: 50, sellPct: 50, dir: 'NEUTRAL', conviction: 0 };
+          return;
+        }
+        // 1. Recent 6-candle Buy/Sell volume share
+        const recent = candles.slice(-6);
+        const buyV = recent.reduce((s, c) => s + (c.buyVol || 0), 0);
+        const sellV = recent.reduce((s, c) => s + (c.sellVol || 0), 0);
+        const volBuyPct = (buyV + sellV) > 1e-6 ? (buyV / (buyV + sellV)) * 100 : 50;
+
+        // 2. Timeframe OBI Bid %
+        const obiBidPct = (a.obi && isFinite(a.obi.bidPct)) ? a.obi.bidPct : 50;
+
+        // 3. MACD Histogram + Predictive Slope Angle score (0..100)
+        const li = Math.max(0, (a.macdSeries?.length || 1) - 1);
+        const m = (a.macdSeries && a.macdSeries[li]) ? a.macdSeries[li] : { hist: 0 };
+        const pm = a.macdPredMeta || { macdAngle: 0, state: 'NEUTRAL' };
+        let macdScore = 50 + Math.max(-35, Math.min(35, (pm.macdAngle || 0) * 0.9)) + (m.hist >= 0 ? 10 : -10);
+        if (pm.state === 'BULL_CROSS' || pm.state === 'IMMINENT_BULL') macdScore += 10;
+        if (pm.state === 'BEAR_CROSS' || pm.state === 'IMMINENT_BEAR') macdScore -= 10;
+        macdScore = Math.max(5, Math.min(95, macdScore));
+
+        // 4. ML Live Bias score (0..100)
+        const ml = a.mlLiveBias || { dir: 'NEUTRAL', conf: 50 };
+        const mlBuyPct = ml.dir === 'BULLISH' ? ml.conf : ml.dir === 'BEARISH' ? (100 - ml.conf) : 50;
+
+        const buyPct = Math.max(1, Math.min(99, Math.round(
+          volBuyPct * 0.35 + obiBidPct * 0.25 + macdScore * 0.20 + mlBuyPct * 0.20
+        )));
+        const sellPct = 100 - buyPct;
+        const dir = buyPct >= 53 ? 'BUY' : sellPct >= 53 ? 'SELL' : 'NEUTRAL';
+        const conviction = Math.abs(buyPct - 50);
+
+        perTf[tf] = { tf, buyPct, sellPct, dir, conviction };
+        wBuySum += buyPct * (weights[tf] || 0.25);
+        wTot += (weights[tf] || 0.25);
+      });
+
+      const overallBuy = Math.max(1, Math.min(99, Math.round(wBuySum / Math.max(0.01, wTot))));
+      const overallSell = 100 - overallBuy;
+      const overallDir = overallBuy >= 52 ? 'BUY' : overallSell >= 52 ? 'SELL' : 'NEUTRAL';
+      const overallPct = overallDir === 'SELL' ? overallSell : overallBuy;
+
+      // Dominant Timeframe: highest conviction (preferring TFs aligned with overallDir, then higher TF)
+      const tfOrder = { '4h': 4, '15m': 3, '5m': 2, '1m': 1 };
+      const ranked = TFS.map((t) => perTf[t]).sort((a, b) => {
+        const aAlign = (overallDir === 'NEUTRAL' || a.dir === overallDir) ? 1 : 0;
+        const bAlign = (overallDir === 'NEUTRAL' || b.dir === overallDir) ? 1 : 0;
+        if (bAlign !== aAlign) return bAlign - aAlign;
+        if (b.conviction !== a.conviction) return b.conviction - a.conviction;
+        return tfOrder[b.tf] - tfOrder[a.tf];
+      });
+      const dominant = ranked[0] || { tf: '1m', buyPct: 50, sellPct: 50, dir: 'NEUTRAL' };
+      const domPct = dominant.dir === 'SELL' ? dominant.sellPct : dominant.buyPct;
+
+      STATE.mtfStrength = { perTf, overallBuy, overallSell, overallDir, overallPct, dominant, domPct };
+      return STATE.mtfStrength;
+    }
+
+    function renderMtfStrengthDashboard() {
+      const st = computeMtfBuySellStrength();
+      const card = document.getElementById('radarConsolidatedCard');
+      const titleEl = document.getElementById('radarOverallTitle');
+      const pctEl = document.getElementById('radarOverallPct');
+      const domEl = document.getElementById('radarDomTfBadge');
+      const buyBar = document.getElementById('radarOverallBuyBar');
+      const sellBar = document.getElementById('radarOverallSellBar');
+      const buyTxt = document.getElementById('radarOverallBuyTxt');
+      const sellTxt = document.getElementById('radarOverallSellTxt');
+      const subEl = document.getElementById('radarOverallSub');
+
+      if (card && titleEl && pctEl && domEl) {
+        if (st.overallDir === 'BUY') {
+          card.className = 'xl:col-span-4 rounded-xl border border-emerald-500/50 bg-emerald-500/10 p-2.5 flex flex-col justify-between gap-1.5 transition-all';
+          titleEl.className = 'text-base sm:text-lg font-extrabold tracking-wide text-emerald-400';
+          titleEl.textContent = '▲ BULLISH BUY';
+          pctEl.className = 'text-lg sm:text-xl font-extrabold text-emerald-300';
+          pctEl.textContent = `${st.overallBuy}%`;
+          domEl.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-400/60 bg-emerald-500/20 text-emerald-200';
+          domEl.textContent = `DOMINANT: ${st.dominant.tf.toUpperCase()} (${st.domPct}%)`;
+        } else if (st.overallDir === 'SELL') {
+          card.className = 'xl:col-span-4 rounded-xl border border-rose-500/50 bg-rose-500/10 p-2.5 flex flex-col justify-between gap-1.5 transition-all';
+          titleEl.className = 'text-base sm:text-lg font-extrabold tracking-wide text-rose-400';
+          titleEl.textContent = '▼ BEARISH SELL';
+          pctEl.className = 'text-lg sm:text-xl font-extrabold text-rose-300';
+          pctEl.textContent = `${st.overallSell}%`;
+          domEl.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold border border-rose-400/60 bg-rose-500/20 text-rose-200';
+          domEl.textContent = `DOMINANT: ${st.dominant.tf.toUpperCase()} (${st.domPct}%)`;
+        } else {
+          card.className = 'xl:col-span-4 rounded-xl border border-slate-600/60 bg-slate-800/40 p-2.5 flex flex-col justify-between gap-1.5 transition-all';
+          titleEl.className = 'text-base sm:text-lg font-extrabold tracking-wide text-slate-200';
+          titleEl.textContent = '● NEUTRAL';
+          pctEl.className = 'text-lg sm:text-xl font-extrabold text-slate-300';
+          pctEl.textContent = `${st.overallBuy}%`;
+          domEl.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-600 bg-slate-800 text-slate-300';
+          domEl.textContent = `DOMINANT: ${st.dominant.tf.toUpperCase()} (${st.domPct}%)`;
+        }
+        if (buyBar) buyBar.style.width = `${st.overallBuy}%`;
+        if (sellBar) sellBar.style.width = `${st.overallSell}%`;
+        if (buyTxt) buyTxt.textContent = `${st.overallBuy}%`;
+        if (sellTxt) sellTxt.textContent = `${st.overallSell}%`;
+        if (subEl) subEl.textContent = `Lead TF: ${st.dominant.tf.toUpperCase()} ${st.dominant.dir}`;
+      }
+
+      const grid = document.getElementById('mtfBuySellMiniGrid');
+      if (grid) {
+        grid.innerHTML = TFS.map((tf) => {
+          const item = st.perTf[tf];
+          const isDom = st.dominant.tf === tf;
+          const isActive = STATE.timeframe === tf;
+          const isBuy = item.dir === 'BUY', isSell = item.dir === 'SELL';
+          const borderCls = isDom
+            ? (isBuy ? 'border-emerald-400/80 ring-1 ring-emerald-400/40 bg-emerald-500/10' : isSell ? 'border-rose-400/80 ring-1 ring-rose-400/40 bg-rose-500/10' : 'border-cyan-400/70 bg-[#0b131d]')
+            : (isActive ? 'border-cyan-500/50 bg-[#0b131d]' : 'border-[#1a2634] bg-[#0a1017]');
+          const sideBadge = isBuy
+            ? `<span class="text-[9.5px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-300">BUY ${item.buyPct}%</span>`
+            : isSell
+            ? `<span class="text-[9.5px] px-1.5 py-0.5 rounded font-bold bg-rose-500/20 text-rose-300">SELL ${item.sellPct}%</span>`
+            : `<span class="text-[9.5px] px-1.5 py-0.5 rounded font-bold bg-slate-800 text-slate-300">50/50</span>`;
+          return `
+            <button onclick="setTimeframe('${tf}')" class="text-left rounded-xl border p-2 font-mono space-y-1.5 transition hover:brightness-110 ${borderCls}">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-xs font-bold ${isActive ? 'text-cyan-300' : 'text-slate-200'} uppercase">${tf}${isDom ? ' ★' : ''}</span>
+                ${sideBadge}
+              </div>
+              <div class="w-full h-2 rounded-full bg-[#111c27] overflow-hidden flex border border-[#1e2d3d]">
+                <div class="h-full bg-emerald-400 transition-all duration-300" style="width: ${item.buyPct}%"></div>
+                <div class="h-full bg-rose-500 transition-all duration-300" style="width: ${item.sellPct}%"></div>
+              </div>
+              <div class="flex items-center justify-between font-mono-num text-[9.5px]">
+                <span class="text-emerald-400 font-semibold">B:${item.buyPct}%</span>
+                <span class="text-rose-400 font-semibold">S:${item.sellPct}%</span>
+              </div>
+            </button>
+          `;
+        }).join('');
+      }
+    }
+
     function renderAll() {
       const tf = STATE.timeframe;
       const candles = STATE.candlesByTf[tf];
@@ -3316,7 +3559,7 @@
         if (!z) return '';
         const dist = z.price - last.c;
         return `
-          <div class="glass-panel rounded-xl p-3 border ${res ? 'border-rose-500/25' : 'border-emerald-500/25'} space-y-1.5 font-mono">
+          <div class="glass-panel bg-[#0b1117]/95 border border-[#1a2634] rounded-xl p-3 border ${res ? 'border-rose-500/25' : 'border-emerald-500/25'} space-y-1.5 font-mono">
             <div class="flex items-center justify-between text-xs">
               <span class="font-bold ${res ? 'text-rose-400' : 'text-emerald-400'}">${k} · $${z.price.toFixed(0)}</span>
               <span class="px-1.5 py-0.5 rounded text-[10px] ${res ? 'bg-rose-500/15 text-rose-300' : 'bg-emerald-500/15 text-emerald-300'}">${z.strength}%</span>
@@ -3417,6 +3660,7 @@
       renderHistoryBadgesAndMiniCard();
       renderHistoryTab();
       renderPatternLibrary();
+      renderMtfStrengthDashboard();
       drawMainChart();
     }
 
@@ -3483,11 +3727,593 @@
       canvas.addEventListener('touchend', clearHover);
     }
 
+    /*************************************************************************
+     * 12B. 50x TRADE SIMULATION ("TIME MACHINE") ENGINE
+     *************************************************************************/
+    function autoFillTimeMachineFromLive() {
+      const tf = STATE.timeframe;
+      const candles = STATE.candlesByTf[tf];
+      const a = STATE.analyticsByTf[tf];
+      if (!candles || !candles.length) return;
+      const last = candles[candles.length - 1];
+      const tm = STATE.timeMachine;
+      tm.entry = Number(last.c.toFixed(1));
+
+      // Auto-pick direction from Predictive MACD / ML Bias
+      const pm = a.macdPredMeta || { state: 'NEUTRAL' };
+      if (pm.state === 'BEAR_CROSS' || pm.state === 'IMMINENT_BEAR' || pm.state === 'DUAL_TREND_DOWN' || (pm.state === 'NEUTRAL' && a.mlLiveBias && a.mlLiveBias.dir === 'BEARISH')) {
+        tm.side = 'SHORT';
+      } else {
+        tm.side = 'LONG';
+      }
+
+      // Auto-compute SL/TP % from S1/R1 or recent ATR
+      const recent = candles.slice(-20);
+      const avgRangePct = (recent.reduce((s, c) => s + (c.h - c.l) / Math.max(1, c.c), 0) / Math.max(1, recent.length)) * 100;
+      let slPct = Math.max(0.06, Math.min(2.0, avgRangePct * 1.6));
+      let tpPct = Math.max(0.10, Math.min(4.0, slPct * 1.75));
+
+      if (tm.side === 'LONG' && a.srZones.S1 && a.srZones.R1) {
+        const sDist = ((tm.entry - a.srZones.S1.price) / tm.entry) * 100;
+        const rDist = ((a.srZones.R1.price - tm.entry) / tm.entry) * 100;
+        if (sDist >= 0.12 && sDist <= 2.5) slPct = sDist;
+        if (rDist >= 0.18 && rDist <= 5.0) tpPct = rDist;
+      } else if (tm.side === 'SHORT' && a.srZones.R1 && a.srZones.S1) {
+        const rDist = ((a.srZones.R1.price - tm.entry) / tm.entry) * 100;
+        const sDist = ((tm.entry - a.srZones.S1.price) / tm.entry) * 100;
+        if (rDist >= 0.12 && rDist <= 2.5) slPct = rDist;
+        if (sDist >= 0.18 && sDist <= 5.0) tpPct = sDist;
+      }
+
+      tm.slPct = Math.round(slPct * 50) / 50;
+      tm.tpPct = Math.round(tpPct * 50) / 50;
+      syncTimeMachineControls();
+      runTimeMachineSimulation(true);
+    }
+
+    function syncTimeMachineControls() {
+      const tm = STATE.timeMachine;
+      const entryEl = document.getElementById('tmEntryInput');
+      if (entryEl) entryEl.value = tm.entry ? tm.entry.toFixed(1) : '';
+      const capEl = document.getElementById('tmCapitalInput');
+      if (capEl) capEl.value = tm.capital;
+      const slEl = document.getElementById('slTmSlPct');
+      if (slEl) slEl.value = tm.slPct;
+      const tpEl = document.getElementById('slTmTpPct');
+      if (tpEl) tpEl.value = tm.tpPct;
+      const levEl = document.getElementById('slTmLev');
+      if (levEl) levEl.value = tm.leverage;
+      const horEl = document.getElementById('slTmHorizon');
+      if (horEl) horEl.value = tm.horizon;
+      const runsEl = document.getElementById('slTmRuns');
+      if (runsEl) runsEl.value = tm.runs;
+
+      const longBtn = document.getElementById('tmSideLongBtn');
+      const shortBtn = document.getElementById('tmSideShortBtn');
+      if (longBtn && shortBtn) {
+        longBtn.className = tm.side === 'LONG'
+          ? 'py-2 rounded-xl border border-emerald-400 bg-emerald-500/20 text-emerald-300 font-bold transition'
+          : 'py-2 rounded-xl border border-[#1a2634] bg-[#0e161f] text-slate-400 hover:text-white font-bold transition';
+        shortBtn.className = tm.side === 'SHORT'
+          ? 'py-2 rounded-xl border border-rose-400 bg-rose-500/20 text-rose-300 font-bold transition'
+          : 'py-2 rounded-xl border border-[#1a2634] bg-[#0e161f] text-slate-400 hover:text-white font-bold transition';
+      }
+
+      const histBtn = document.getElementById('tmModeHistBtn');
+      const bootBtn = document.getElementById('tmModeBootBtn');
+      if (histBtn && bootBtn) {
+        histBtn.className = tm.mode === 'HIST_REPLAY'
+          ? 'py-1.5 px-2 rounded-lg border border-violet-400/70 bg-violet-500/20 text-violet-200 font-bold transition'
+          : 'py-1.5 px-2 rounded-lg border border-[#1a2634] bg-[#0e161f] text-slate-400 hover:text-white font-semibold transition';
+        bootBtn.className = tm.mode === 'BLOCK_BOOT'
+          ? 'py-1.5 px-2 rounded-lg border border-violet-400/70 bg-violet-500/20 text-violet-200 font-bold transition'
+          : 'py-1.5 px-2 rounded-lg border border-[#1a2634] bg-[#0e161f] text-slate-400 hover:text-white font-semibold transition';
+      }
+
+      const entry = tm.entry || 1;
+      const slPrice = tm.side === 'LONG' ? entry * (1 - tm.slPct / 100) : entry * (1 + tm.slPct / 100);
+      const tpPrice = tm.side === 'LONG' ? entry * (1 + tm.tpPct / 100) : entry * (1 - tm.tpPct / 100);
+      const posSize = tm.capital * tm.leverage;
+      const feeCost = posSize * ((STATE.lab.tmFeePct || 0.10) / 100);
+      const liqDist = (1 / Math.max(1, tm.leverage)) * 0.92;
+      const liqPrice = tm.side === 'LONG' ? entry * (1 - liqDist) : entry * (1 + liqDist);
+      const rr = tm.tpPct / Math.max(0.01, tm.slPct);
+
+      const setTxt = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+      setTxt('tmSlPctVal', `${tm.slPct.toFixed(2)}%`);
+      setTxt('tmSlPriceVal', slPrice.toFixed(1));
+      setTxt('tmTpPctVal', `${tm.tpPct.toFixed(2)}%`);
+      setTxt('tmTpPriceVal', tpPrice.toFixed(1));
+      setTxt('tmLevVal', `${tm.leverage}x`);
+      setTxt('tmHorVal', `${tm.horizon}c`);
+      setTxt('tmRunsVal', `${tm.runs} Runs`);
+      setTxt('tmRrBadge', `R:R 1 : ${rr.toFixed(2)}`);
+      setTxt('tmPosSize', `$${posSize.toLocaleString(undefined, { maximumFractionDigits: 0 })}`);
+      setTxt('tmFeeCost', `$${feeCost.toFixed(2)}`);
+      setTxt('tmLiqPrice', `$${liqPrice.toFixed(1)}`);
+    }
+
+    function setTmSide(side) {
+      STATE.timeMachine.side = side;
+      syncTimeMachineControls();
+      runTimeMachineSimulation(true);
+    }
+
+    function setTmMode(mode) {
+      STATE.timeMachine.mode = mode;
+      syncTimeMachineControls();
+      runTimeMachineSimulation(true);
+    }
+
+    function onTmInputChange() {
+      const tm = STATE.timeMachine;
+      const eVal = parseFloat(document.getElementById('tmEntryInput')?.value);
+      const cVal = parseFloat(document.getElementById('tmCapitalInput')?.value);
+      if (isFinite(eVal) && eVal > 0) tm.entry = eVal;
+      if (isFinite(cVal) && cVal >= 10) tm.capital = cVal;
+      syncTimeMachineControls();
+      runTimeMachineSimulation(true);
+    }
+
+    function onTmSliderChange(key, val) {
+      STATE.timeMachine[key] = val;
+      if (key === 'runs') {
+        STATE.lab.tmRuns = val;
+        const lEl = document.getElementById('slLabTmRuns'); if (lEl) lEl.value = val;
+        const vEl = document.getElementById('valTmRuns'); if (vEl) vEl.textContent = `${val} Runs`;
+      } else if (key === 'horizon') {
+        STATE.lab.tmHorizon = val;
+        const lEl = document.getElementById('slLabTmHorizon'); if (lEl) lEl.value = val;
+        const vEl = document.getElementById('valTmHorizon'); if (vEl) vEl.textContent = `${val} Candles`;
+      }
+      syncTimeMachineControls();
+      runTimeMachineSimulation(true);
+    }
+
+    function selectTmRun(idx) {
+      STATE.timeMachine.selectedRunIdx = (STATE.timeMachine.selectedRunIdx === idx) ? -1 : idx;
+      renderTimeMachineUI();
+    }
+
+    function animateTimeMachineReplay() {
+      const tm = STATE.timeMachine;
+      if (!tm.result) runTimeMachineSimulation(false);
+      if (!tm.result) return;
+      if (tm.animTimer) { clearInterval(tm.animTimer); tm.animTimer = null; }
+      tm.animStep = 1;
+      const maxSteps = tm.result.horizon;
+      tm.animTimer = setInterval(() => {
+        tm.animStep++;
+        drawTimeMachinePathsCanvas();
+        if (tm.animStep >= maxSteps) {
+          clearInterval(tm.animTimer);
+          tm.animTimer = null;
+          tm.animStep = null;
+          drawTimeMachinePathsCanvas();
+        }
+      }, 65);
+    }
+
+    function runTimeMachineSimulation(redrawAll = true) {
+      const tf = STATE.timeframe;
+      const candles = STATE.candlesByTf[tf];
+      const a = STATE.analyticsByTf[tf];
+      if (!candles || candles.length < 15) return;
+
+      const tm = STATE.timeMachine;
+      if (!tm.entry || tm.entry <= 0) tm.entry = Number(candles[candles.length - 1].c.toFixed(1));
+      if (tm.animTimer) { clearInterval(tm.animTimer); tm.animTimer = null; tm.animStep = null; }
+
+      const runs = Math.max(10, Math.min(100, Number(tm.runs) || 50));
+      const horizon = Math.max(5, Math.min(60, Number(tm.horizon) || 25));
+      const blockSize = Math.max(2, Math.min(6, Number(STATE.lab.tmBlockSize) || 3));
+      const feePct = Number(STATE.lab.tmFeePct) || 0.10;
+      const driftWeight = (Number(STATE.lab.tmDriftWeight) || 25) / 100;
+
+      const entry = tm.entry;
+      const isLong = tm.side === 'LONG';
+      const slPrice = isLong ? entry * (1 - tm.slPct / 100) : entry * (1 + tm.slPct / 100);
+      const tpPrice = isLong ? entry * (1 + tm.tpPct / 100) : entry * (1 - tm.tpPct / 100);
+      const posSize = tm.capital * tm.leverage;
+      const feeUsd = posSize * (feePct / 100);
+      const riskUsd = Math.max(0.01, posSize * (tm.slPct / 100));
+
+      // Extract real historical per-candle returns (o->h, o->l, o->c) from live klines
+      const barReturns = [];
+      for (let i = 1; i < candles.length; i++) {
+        const prevC = Math.max(1e-6, candles[i - 1].c);
+        const c = candles[i];
+        barReturns.push({
+          idx: i,
+          hiRet: (c.h - prevC) / prevC,
+          loRet: (c.l - prevC) / prevC,
+          clRet: (c.c - prevC) / prevC,
+          vol: (c.h - c.l) / prevC,
+          deltaPct: c.deltaPct || 0,
+        });
+      }
+
+      // Compute slight momentum drift from live OBI + Predictive MACD angle
+      const liveObi = (a.obi && isFinite(a.obi.pct)) ? a.obi.pct / 100 : 0;
+      const liveAngle = (a.macdPredMeta && isFinite(a.macdPredMeta.macdAngle)) ? Math.max(-1, Math.min(1, a.macdPredMeta.macdAngle / 45)) : 0;
+      const avgVol = barReturns.reduce((s, r) => s + r.vol, 0) / Math.max(1, barReturns.length);
+      const perBarDrift = (liveObi * 0.4 + liveAngle * 0.6) * avgVol * 0.14 * driftWeight;
+
+      // Score historical start indices by regime similarity (volatility + MACD slope + delta)
+      const lastBar = barReturns[barReturns.length - 1] || { vol: avgVol, deltaPct: 0 };
+      const lastMacdSig = (a.macdSignals && a.macdSignals.length) ? a.macdSignals[a.macdSignals.length - 1] : { macdAngle: 0 };
+      const rankedStarts = [];
+      for (let i = 0; i < barReturns.length - 2; i++) {
+        const br = barReturns[i];
+        const ms = (a.macdSignals && a.macdSignals[br.idx]) ? a.macdSignals[br.idx] : { macdAngle: 0 };
+        const volDiff = Math.abs(br.vol - lastBar.vol) / Math.max(1e-5, avgVol);
+        const angDiff = Math.abs((ms.macdAngle || 0) - (lastMacdSig.macdAngle || 0)) / 45;
+        const dDiff = Math.abs(br.deltaPct - lastBar.deltaPct) / 60;
+        const dist = volDiff * 0.4 + angDiff * 0.4 + dDiff * 0.2;
+        rankedStarts.push({ startPos: i, dist });
+      }
+      rankedStarts.sort((x, y) => x.dist - y.dist);
+
+      // Deterministic pseudo-random helper seeded by live close + params so UI doesn't jitter uncontrollably unless re-run
+      let seed = Math.floor(entry * 10 + runs * 31 + horizon * 17 + (isLong ? 7 : 13) + candles.length * 101);
+      const rand = () => {
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        return seed / 4294967296;
+      };
+
+      const paths = [];
+      let tpHits = 0, slHits = 0, timeouts = 0;
+      let totalPnl = 0, grossWin = 0, grossLoss = 0, totalBarsToExit = 0, exitCount = 0;
+      let worstPnl = Infinity, bestPnl = -Infinity, maxMaePct = 0;
+
+      for (let r = 0; r < runs; r++) {
+        const pts = [entry];
+        let curP = entry;
+        let outcome = 'TIMEOUT';
+        let exitStep = horizon;
+        let exitPrice = entry;
+        let maePct = 0;
+
+        // Pick starting historical block
+        let histCursor = (tm.mode === 'HIST_REPLAY' && rankedStarts.length > 0)
+          ? rankedStarts[r % rankedStarts.length].startPos
+          : Math.floor(rand() * Math.max(1, barReturns.length - blockSize));
+        let blockCount = 0;
+
+        for (let step = 1; step <= horizon; step++) {
+          if (tm.mode === 'BLOCK_BOOT' && blockCount >= blockSize) {
+            histCursor = Math.floor(rand() * Math.max(1, barReturns.length - blockSize));
+            blockCount = 0;
+          }
+          if (histCursor >= barReturns.length) {
+            histCursor = Math.floor(rand() * Math.max(1, barReturns.length - blockSize));
+          }
+          const br = barReturns[histCursor];
+          histCursor++;
+          blockCount++;
+
+          // Slight organic micro-jitter only when wrapping past available history length
+          const jitter = (tm.mode === 'HIST_REPLAY' && r >= rankedStarts.length) ? (rand() - 0.5) * avgVol * 0.15 : 0;
+          const stepHi = curP * (1 + br.hiRet + perBarDrift + jitter);
+          const stepLo = curP * (1 + br.loRet + perBarDrift + jitter);
+          const stepCl = curP * (1 + br.clRet + perBarDrift + jitter);
+
+          if (outcome === 'TIMEOUT') {
+            const advPct = isLong ? Math.max(0, ((entry - stepLo) / entry) * 100) : Math.max(0, ((stepHi - entry) / entry) * 100);
+            if (advPct > maePct) maePct = advPct;
+
+            if (isLong) {
+              if (stepLo <= slPrice) {
+                outcome = 'SL'; exitStep = step; exitPrice = slPrice; curP = slPrice;
+              } else if (stepHi >= tpPrice) {
+                outcome = 'TP'; exitStep = step; exitPrice = tpPrice; curP = tpPrice;
+              } else {
+                curP = stepCl;
+              }
+            } else {
+              if (stepHi >= slPrice) {
+                outcome = 'SL'; exitStep = step; exitPrice = slPrice; curP = slPrice;
+              } else if (stepLo <= tpPrice) {
+                outcome = 'TP'; exitStep = step; exitPrice = tpPrice; curP = tpPrice;
+              } else {
+                curP = stepCl;
+              }
+            }
+          }
+          pts.push(curP);
+        }
+
+        if (outcome === 'TIMEOUT') exitPrice = pts[pts.length - 1];
+        const rawRetPct = isLong ? ((exitPrice - entry) / entry) : ((entry - exitPrice) / entry);
+        const netPnl = posSize * rawRetPct - feeUsd;
+        const rMult = netPnl / riskUsd;
+
+        if (outcome === 'TP') { tpHits++; totalBarsToExit += exitStep; exitCount++; }
+        else if (outcome === 'SL') { slHits++; totalBarsToExit += exitStep; exitCount++; }
+        else { timeouts++; }
+
+        totalPnl += netPnl;
+        if (netPnl >= 0) grossWin += netPnl; else grossLoss += Math.abs(netPnl);
+        if (netPnl < worstPnl) worstPnl = netPnl;
+        if (netPnl > bestPnl) bestPnl = netPnl;
+        if (maePct > maxMaePct) maxMaePct = maePct;
+
+        paths.push({ id: r + 1, pts, outcome, exitStep, exitPrice, netPnl, rMult, maePct });
+      }
+
+      // Compute Median, P90 (Best 10%), and P10 (Worst 10%) price envelopes per step
+      const medianPath = [], p90Path = [], p10Path = [];
+      for (let s = 0; s <= horizon; s++) {
+        const vals = paths.map((p) => p.pts[s]).sort((x, y) => x - y);
+        medianPath.push(vals[Math.floor(vals.length * 0.5)]);
+        p90Path.push(vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.9))]);
+        p10Path.push(vals[Math.max(0, Math.floor(vals.length * 0.1))]);
+      }
+
+      const evUsd = totalPnl / runs;
+      const evR = evUsd / riskUsd;
+      const winRate = (tpHits / runs) * 100;
+      const lossRate = (slHits / runs) * 100;
+      const toRate = (timeouts / runs) * 100;
+      const profitFactor = grossLoss > 0.01 ? (grossWin / grossLoss) : (grossWin > 0 ? 9.99 : 0);
+      const avgBars = exitCount > 0 ? (totalBarsToExit / exitCount) : horizon;
+
+      tm.result = {
+        tf, runs, horizon, entry, slPrice, tpPrice, isLong,
+        paths, medianPath, p90Path, p10Path,
+        tpHits, slHits, timeouts, winRate, lossRate, toRate,
+        evUsd, evR, profitFactor, avgBars, worstPnl, bestPnl, maxMaePct,
+      };
+      tm.selectedRunIdx = -1;
+
+      const tabBadge = document.getElementById('tabTmBadge');
+      if (tabBadge) tabBadge.textContent = `${winRate.toFixed(0)}%W`;
+
+      if (redrawAll) {
+        renderTimeMachineUI();
+        drawMainChart();
+      }
+    }
+
+    function renderTimeMachineUI() {
+      const tm = STATE.timeMachine;
+      const res = tm.result;
+      syncTimeMachineControls();
+      if (!res) return;
+
+      const setTxt = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+      setTxt('tmCanvasTf', res.tf.toUpperCase());
+      setTxt('tmStatWinRate', `${res.winRate.toFixed(1)}%`);
+      setTxt('tmStatWinCnt', `${res.tpHits} / ${res.runs}`);
+      setTxt('tmStatLossRate', `${res.lossRate.toFixed(1)}%`);
+      setTxt('tmStatLossCnt', `${res.slHits} / ${res.runs}`);
+      setTxt('tmStatToRate', `${res.toRate.toFixed(1)}%`);
+      setTxt('tmStatToCnt', `${res.timeouts} / ${res.runs}`);
+
+      const evEl = document.getElementById('tmStatEv');
+      if (evEl) {
+        evEl.textContent = `${res.evUsd >= 0 ? '+' : ''}$${res.evUsd.toFixed(2)}`;
+        evEl.className = `text-base font-bold mt-0.5 ${res.evUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      }
+      setTxt('tmStatEvR', `${res.evR >= 0 ? '+' : ''}${res.evR.toFixed(2)}R`);
+      setTxt('tmStatPf', res.profitFactor.toFixed(2));
+      setTxt('tmStatAvgBars', `Avg ${res.avgBars.toFixed(1)}c`);
+      setTxt('tmStatWorst', `$${res.worstPnl.toFixed(2)}`);
+      setTxt('tmStatMae', `Max MAE ${res.maxMaePct.toFixed(2)}%`);
+      setTxt('tmBestWorstRange', `Worst $${res.worstPnl.toFixed(1)} → Best +$${res.bestPnl.toFixed(1)}`);
+
+      // Verdict Banner
+      const banner = document.getElementById('tmVerdictBanner');
+      const pill = document.getElementById('tmVerdictPill');
+      const vTxt = document.getElementById('tmVerdictText');
+      const vMeta = document.getElementById('tmVerdictMeta');
+      if (banner && pill && vTxt) {
+        if (res.evUsd > 0 && res.profitFactor >= 1.25) {
+          banner.className = 'rounded-2xl p-3.5 border border-emerald-500/40 bg-emerald-500/10 flex flex-col md:flex-row md:items-center justify-between gap-2 font-mono';
+          pill.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/25 text-emerald-300 border border-emerald-400/50';
+          pill.textContent = '✓ POSITIVE EDGE';
+          vTxt.textContent = `Favorable expectancy (+$${res.evUsd.toFixed(2)} / trade, PF ${res.profitFactor.toFixed(2)}) across ${res.runs} real-data replays.`;
+        } else if (res.evUsd >= -5 && res.profitFactor >= 0.95) {
+          banner.className = 'rounded-2xl p-3.5 border border-amber-500/40 bg-amber-500/10 flex flex-col md:flex-row md:items-center justify-between gap-2 font-mono';
+          pill.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/25 text-amber-300 border border-amber-400/50';
+          pill.textContent = '⚠ COIN FLIP / MARGINAL';
+          vTxt.textContent = `Near breakeven after fees (${res.evUsd >= 0 ? '+' : ''}$${res.evUsd.toFixed(2)} EV). Consider tightening SL or waiting for stronger MACD/OBI alignment.`;
+        } else {
+          banner.className = 'rounded-2xl p-3.5 border border-rose-500/40 bg-rose-500/10 flex flex-col md:flex-row md:items-center justify-between gap-2 font-mono';
+          pill.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/25 text-rose-300 border border-rose-400/50';
+          pill.textContent = '✕ NEGATIVE EV — HIGH RISK';
+          vTxt.textContent = `Unfavorable risk/reward ($${res.evUsd.toFixed(2)} EV, ${res.lossRate.toFixed(0)}% stop-out rate). Re-evaluate entry or wait before committing capital.`;
+        }
+        if (vMeta) vMeta.textContent = `TF: ${res.tf.toUpperCase()} · ${res.runs} Replays · ${tm.mode === 'HIST_REPLAY' ? 'Historical Setup' : 'Block Bootstrap'}`;
+      }
+
+      // 50-Tile Outcome Matrix
+      const grid = document.getElementById('tmOutcomeGrid');
+      if (grid) {
+        grid.innerHTML = res.paths.map((p, idx) => {
+          const isSel = tm.selectedRunIdx === idx;
+          const cls = p.outcome === 'TP'
+            ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
+            : p.outcome === 'SL'
+            ? 'border-rose-500/50 bg-rose-500/15 text-rose-300'
+            : 'border-slate-700 bg-slate-800/50 text-slate-300';
+          const ring = isSel ? 'ring-2 ring-cyan-300 scale-105' : 'hover:brightness-125';
+          return `
+            <button onclick="selectTmRun(${idx})" class="p-1.5 rounded-lg border text-center transition ${cls} ${ring}">
+              <div class="font-bold text-[9.5px]">#${p.id} ${p.outcome === 'TIMEOUT' ? 'TO' : p.outcome}</div>
+              <div class="text-[9px] opacity-90">${p.netPnl >= 0 ? '+' : ''}${p.netPnl.toFixed(0)}$</div>
+            </button>
+          `;
+        }).join('');
+      }
+
+      const selInfo = document.getElementById('tmSelectedRunInfo');
+      if (selInfo) {
+        if (tm.selectedRunIdx >= 0 && res.paths[tm.selectedRunIdx]) {
+          const sp = res.paths[tm.selectedRunIdx];
+          selInfo.textContent = `Run #${sp.id}: ${sp.outcome} in ${sp.exitStep}c · Net ${sp.netPnl >= 0 ? '+' : ''}$${sp.netPnl.toFixed(2)} (${sp.rMult >= 0 ? '+' : ''}${sp.rMult.toFixed(2)}R)`;
+        } else {
+          selInfo.textContent = `All ${res.runs} runs shown`;
+        }
+      }
+
+      drawTimeMachinePathsCanvas();
+      drawTimeMachinePnlDist();
+    }
+
+    function drawTimeMachinePathsCanvas() {
+      const canvas = document.getElementById('tmPathsCanvas');
+      const res = STATE.timeMachine.result;
+      if (!canvas || !res) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const W = rect.width, H = rect.height;
+      const pad = { top: 18, right: 64, bottom: 24, left: 12 };
+      const plotW = W - pad.left - pad.right, plotH = H - pad.top - pad.bottom;
+      ctx.clearRect(0, 0, W, H);
+
+      let minP = Math.min(res.slPrice, res.tpPrice, res.entry);
+      let maxP = Math.max(res.slPrice, res.tpPrice, res.entry);
+      res.paths.forEach((p) => p.pts.forEach((v) => { if (v < minP) minP = v; if (v > maxP) maxP = v; }));
+      const span = Math.max(maxP - minP, res.entry * 0.002);
+      minP -= span * 0.08; maxP += span * 0.08;
+
+      const maxStep = STATE.timeMachine.animStep !== null ? Math.min(res.horizon, STATE.timeMachine.animStep) : res.horizon;
+      const xOf = (s) => pad.left + (s / Math.max(1, res.horizon)) * plotW;
+      const yOf = (p) => pad.top + ((maxP - p) / (maxP - minP)) * plotH;
+
+      // Grid
+      ctx.strokeStyle = 'rgba(30, 45, 61, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#64748b';
+      for (let g = 0; g <= 4; g++) {
+        const p = minP + ((maxP - minP) * g) / 4;
+        const y = yOf(p);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+        ctx.fillText(p.toFixed(1), W - pad.right + 6, y + 3);
+      }
+
+      // Draw individual 50 paths
+      const selIdx = STATE.timeMachine.selectedRunIdx;
+      res.paths.forEach((p, idx) => {
+        const isSel = selIdx === idx;
+        ctx.save();
+        ctx.strokeStyle = p.outcome === 'TP'
+          ? (isSel ? '#34d399' : 'rgba(16, 185, 129, 0.22)')
+          : p.outcome === 'SL'
+          ? (isSel ? '#fb7185' : 'rgba(239, 68, 68, 0.22)')
+          : (isSel ? '#cbd5e1' : 'rgba(148, 163, 184, 0.22)');
+        ctx.lineWidth = isSel ? 2.6 : 1.0;
+        if (isSel) { ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 8; }
+        ctx.beginPath();
+        for (let s = 0; s <= maxStep; s++) {
+          const x = xOf(s), y = yOf(p.pts[s]);
+          if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // Best 10% (P90) & Worst 10% (P10) dashed envelopes
+      const drawCurve = (arr, color, width, dash) => {
+        ctx.save();
+        ctx.strokeStyle = color; ctx.lineWidth = width;
+        if (dash) ctx.setLineDash(dash);
+        ctx.beginPath();
+        for (let s = 0; s <= maxStep; s++) {
+          const x = xOf(s), y = yOf(arr[s]);
+          if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      };
+      drawCurve(res.p90Path, '#34d399', 1.5, [4, 3]);
+      drawCurve(res.p10Path, '#fb7185', 1.5, [4, 3]);
+      drawCurve(res.medianPath, '#22d3ee', 2.4, null);
+
+      // Horizontal TP, Entry, SL lines
+      const drawLevel = (price, label, color) => {
+        const y = yOf(price);
+        ctx.save();
+        ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = color;
+        ctx.fillRect(W - pad.right + 1, y - 8, pad.right - 3, 16);
+        ctx.fillStyle = '#070b0f'; ctx.font = '700 9.5px "JetBrains Mono", monospace';
+        ctx.fillText(label, W - pad.right + 4, y + 3);
+        ctx.restore();
+      };
+      drawLevel(res.tpPrice, `TP`, '#10b981');
+      drawLevel(res.entry, `ENT`, '#38bdf8');
+      drawLevel(res.slPrice, `SL`, '#ef4444');
+    }
+
+    function drawTimeMachinePnlDist() {
+      const canvas = document.getElementById('tmPnlDistCanvas');
+      const res = STATE.timeMachine.result;
+      if (!canvas || !res) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const W = rect.width, H = rect.height;
+      const pad = { top: 14, right: 12, bottom: 24, left: 12 };
+      const plotW = W - pad.left - pad.right, plotH = H - pad.top - pad.bottom;
+      ctx.clearRect(0, 0, W, H);
+
+      const pnls = res.paths.map((p) => p.netPnl);
+      const minV = Math.min(...pnls, -1), maxV = Math.max(...pnls, 1);
+      const bins = 12;
+      const step = Math.max(0.01, (maxV - minV) / bins);
+      const counts = new Array(bins).fill(0);
+      pnls.forEach((v) => {
+        const b = Math.min(bins - 1, Math.max(0, Math.floor((v - minV) / step)));
+        counts[b]++;
+      });
+      const maxC = Math.max(...counts, 1);
+      const barW = plotW / bins;
+
+      counts.forEach((c, i) => {
+        const mid = minV + (i + 0.5) * step;
+        const bh = (c / maxC) * (plotH - 12);
+        const x = pad.left + i * barW + 2;
+        const y = pad.top + plotH - bh;
+        ctx.fillStyle = mid >= 0 ? 'rgba(16, 185, 129, 0.78)' : 'rgba(239, 68, 68, 0.78)';
+        ctx.fillRect(x, y, Math.max(4, barW - 4), bh);
+        if (c > 0) {
+          ctx.fillStyle = '#cbd5e1';
+          ctx.font = '700 9px "JetBrains Mono", monospace';
+          ctx.fillText(String(c), x + (barW - 4) / 2 - 4, y - 3);
+        }
+      });
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '9.5px "JetBrains Mono", monospace';
+      ctx.fillText(`$${minV.toFixed(0)}`, pad.left, H - 7);
+      ctx.fillText('$0', pad.left + ((0 - minV) / Math.max(0.01, maxV - minV)) * plotW - 6, H - 7);
+      ctx.fillText(`+$${maxV.toFixed(0)}`, W - pad.right - 34, H - 7);
+    }
+
     function switchTab(tab) {
       STATE.activeTab = tab;
       document.getElementById('viewMain').classList.toggle('hidden', tab !== 'main');
       document.getElementById('viewLibrary').classList.toggle('hidden', tab !== 'library');
       document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
+      document.getElementById('viewTimeMachine').classList.toggle('hidden', tab !== 'timemachine');
       document.getElementById('viewLab').classList.toggle('hidden', tab !== 'lab');
 
       const activeCls = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-cyan-500/15 text-cyan-300 border border-cyan-500/40';
@@ -3496,14 +4322,18 @@
       document.getElementById('tabMainBtn').className = tab === 'main' ? activeCls : idleCls;
       document.getElementById('tabLibraryBtn').className = (tab === 'library' ? activeCls : idleCls) + ' flex items-center gap-1.5';
       document.getElementById('tabHistoryBtn').className = (tab === 'history' ? activeCls : idleCls) + ' flex items-center gap-1.5';
+      document.getElementById('tabTmBtn').className = (tab === 'timemachine' ? activeCls : idleCls) + ' flex items-center gap-1.5';
       document.getElementById('tabLabBtn').className = tab === 'lab' ? activeCls : idleCls;
 
       if (tab === 'main') {
-        setTimeout(() => { drawMainChart(); MATRIX_TFS.forEach((t) => drawDeltaChartForTf(t)); }, 30);
+        setTimeout(() => { drawMainChart(); TFS.forEach((t) => drawMacdSubChartForTf(t)); MATRIX_TFS.forEach((t) => drawDeltaChartForTf(t)); }, 30);
       } else if (tab === 'library') {
         renderPatternLibrary();
       } else if (tab === 'history') {
         renderHistoryTab();
+      } else if (tab === 'timemachine') {
+        if (!STATE.timeMachine.result) autoFillTimeMachineFromLive();
+        setTimeout(() => renderTimeMachineUI(), 30);
       }
     }
 
@@ -3614,6 +4444,7 @@
         mlSignals: { id: 'togMl', on: 'border-fuchsia-500/50 bg-fuchsia-500/15 text-fuchsia-300' },
         geoPattern: { id: 'togGeo', on: 'border-sky-400/60 bg-sky-500/15 text-sky-300' },
         macdPredict: { id: 'togMacdPred', on: 'border-lime-400/60 bg-lime-500/15 text-lime-300' },
+        timeMachine: { id: 'togTimeMachine', on: 'border-violet-400/60 bg-violet-500/15 text-violet-300' },
       };
       const cfg = map[layer];
       document.getElementById(cfg.id).className = `px-2.5 py-1 rounded-lg border font-semibold transition ${
@@ -3697,7 +4528,15 @@
         cwMatch: ['valCwMatch', `${val}%`],
         cwSr: ['valCwSr', `${val}%`],
         cwFlow: ['valCwFlow', `${val}%`],
+        tmRuns: ['valTmRuns', `${val} Runs`],
+        tmHorizon: ['valTmHorizon', `${val} Candles`],
+        tmDriftWeight: ['valTmDrift', `${val}%`],
+        tmFeePct: ['valTmFee', `${Number(val).toFixed(2)}%`],
+        tmBlockSize: ['valTmBlock', `${val} Candles`],
       };
+      if (key === 'tmRuns') STATE.timeMachine.runs = val;
+      if (key === 'tmHorizon') STATE.timeMachine.horizon = val;
+      if (key.startsWith('tm')) runTimeMachineSimulation(true);
       if (fmt[key]) {
         const el = document.getElementById(fmt[key][0]);
         if (el) el.textContent = fmt[key][1];
@@ -3725,6 +4564,7 @@
         mlCooldown: 8, mlMinConf: 74, mlOscWeight: 0.40, mlFlowWeight: 0.35, mlDivBoost: 0.25,
         geoMatchThreshold: 70, geoLookback: 28, geoScaleInvariant: true,
         cwMatch: 50, cwSr: 25, cwFlow: 25,
+        tmRuns: 50, tmHorizon: 25, tmDriftWeight: 25, tmFeePct: 0.10, tmBlockSize: 3,
       });
       const sliders = {
         slObiDepth: 20, slObiThresh: 18, slAbsThresh: 35, slDeltaSens: 25, slVpvrBins: 28, slVpvrOpacity: 55,
@@ -3733,7 +4573,8 @@
         slMacdSlopeThresh: 18, slMacdConvDist: 18, slMacdDualSlope: 16, slMacdSlopeLb: 2,
         slMlCooldown: 8, slMlMinConf: 74,
         slMlOscW: 0.40, slMlFlowW: 0.35, slMlDivW: 0.25, slGeoThresh: 70, slGeoPivot: 28,
-        slCwMatch: 50, slCwSr: 25, slCwFlow: 25
+        slCwMatch: 50, slCwSr: 25, slCwFlow: 25,
+        slLabTmRuns: 50, slLabTmHorizon: 25, slLabTmDrift: 25, slLabTmFee: 0.10, slLabTmBlock: 3
       };
       Object.entries(sliders).forEach(([id, v]) => { const el = document.getElementById(id); if (el) el.value = v; });
       document.getElementById('chkGeoScaleInv').checked = true;
@@ -3752,6 +4593,10 @@
       drawMainChart();
       TFS.forEach((t) => drawMacdSubChartForTf(t));
       MATRIX_TFS.forEach((t) => drawDeltaChartForTf(t));
+      if (STATE.activeTab === 'timemachine') {
+        drawTimeMachinePathsCanvas();
+        drawTimeMachinePnlDist();
+      }
     });
 
     window.onload = function () {
@@ -3759,6 +4604,7 @@
       setupChartInteraction();
       generateInitialSimSeries();
       recomputeAllAnalytics();
+      autoFillTimeMachineFromLive();
       renderAll();
       radarLoop();
       setMode('LIVE');
