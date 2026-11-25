@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BTC/USDT // RADAR TERMINAL v5 + PREDICTIVE MACD SLOPE ENGINE + 123 GEO ENGINE</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: JetBrains Mono & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    if (typeof tailwind !== 'undefined') tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            terminal: {
+              bg: '#070b0f',
+              panel: '#0b1117',
+              card: '#0e161f',
+              border: '#1a2634',
+              emerald: '#10b981',
+              crimson: '#ef4444',
+              amber: '#f59e0b',
+              cyan: '#06b6d4',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="min-h-screen text-slate-200 antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- ==================== TOP HEADER BAR ==================== -->
+  <header class="sticky top-0 z-40 border-b border-[#1a2634] bg-[#070b0f]/95 backdrop-blur-md">
+    <div class="max-w-[1640px] mx-auto px-3 sm:px-5 py-2.5 space-y-2.5">
+      <!-- Row 1: Brand, Status, Geo Counter, Live Price, VWAP, OBI -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 pulse-dot"></span>
+            <h1 class="font-mono text-sm sm:text-base md:text-lg font-bold tracking-wider text-slate-100">
+              BTC/USDT <span class="text-cyan-400">//</span> RADAR TERMINAL
+              <span class="hidden xl:inline text-xs font-medium text-emerald-400/90 ml-1">+ 123 GEO ENGINE</span>
+            </h1>
+          </div>
+          <button id="statusBadge" onclick="openConnDiagModal()" title="Click to view Binance Connection Diagnostics & Error Log" class="cursor-pointer font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:brightness-125 transition">
+            CONNECTING...
+          </button>
+          <button id="headerGeoBadge" onclick="switchTab('library')" class="cursor-pointer font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition">
+            GEO &gt;70%: <strong id="headerGeoCount">0</strong>
+          </button>
+          <button id="headerSheetBadge" onclick="openSheetConfigModal()" title="Google Sheet Sync Status (Click to configure Apps Script URL)" class="cursor-pointer font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition">
+            ☁️ SHEET: READY
+          </button>
+        </div>
+
+        <!-- Live Telemetry Pills -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+          <div class="flex items-baseline gap-2">
+            <span id="livePrice" class="font-mono-num text-xl sm:text-2xl font-bold text-white">$--,--</span>
+            <span id="priceChange" class="font-mono-num text-xs font-semibold text-emerald-400">+0.00 (0.00%)</span>
+          </div>
+          <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e161f] border border-[#1a2634] text-xs font-mono-num">
+            <span class="text-amber-400 font-semibold">VWAP:</span>
+            <span id="liveVwap" class="text-slate-100">$--</span>
+          </div>
+          <div id="headerObiPill" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e161f] border border-cyan-500/30 text-xs font-mono-num">
+            <span class="text-slate-400">OBI:</span>
+            <span id="liveObiVal" class="font-bold text-cyan-400">+0.0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Navigation Tabs + Controls Toolbar + MTF Momentum Strip -->
+      <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-t border-[#141f2b]">
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap items-center gap-1.5 bg-[#0b1117] p-1 rounded-xl border border-[#1a2634]">
+          <button id="tabMainBtn" onclick="switchTab('main')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-cyan-500/15 text-cyan-300 border border-cyan-500/40">
+            मुख्य टर्मिनल <span class="hidden sm:inline opacity-80">(MAIN TERMINAL)</span>
+          </button>
+          <button id="tabLibraryBtn" onclick="switchTab('library')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-slate-200 border border-transparent flex items-center gap-1.5">
+            पैटर्न लाइब्रेरी <span class="hidden sm:inline opacity-80">(123 PATTERNS)</span>
+            <span id="tabLibBadge" class="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">0</span>
+          </button>
+          <button id="tabHistoryBtn" onclick="switchTab('history')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-slate-200 border border-transparent flex items-center gap-1.5">
+            इतिहास लॉग <span class="hidden sm:inline opacity-80">(PATTERN HISTORY)</span>
+            <span id="tabHistBadge" class="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">0</span>
+            <span id="tabHistPulse" class="hidden inline-flex h-2 w-2 rounded-full bg-rose-500 pulse-dot" title="Last-Point Fail Alert Recorded"></span>
+          </button>
+          <button id="tabLabBtn" onclick="switchTab('lab')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-slate-200 border border-transparent">
+            फ़ॉर्मूला लैब <span class="hidden sm:inline opacity-80">(FORMULA LAB)</span>
+          </button>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Main Chart Timeframes (1m, 5m, 15m, 4h) -->
+          <div class="flex items-center bg-[#0b1117] rounded-lg border border-[#1a2634] p-0.5 font-mono text-xs">
+            <button onclick="setTimeframe('1m')" data-tf="1m" class="tf-btn px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 font-semibold">1m</button>
+            <button onclick="setTimeframe('5m')" data-tf="5m" class="tf-btn px-2.5 py-1 rounded-md text-slate-400 hover:text-white">5m</button>
+            <button onclick="setTimeframe('15m')" data-tf="15m" class="tf-btn px-2.5 py-1 rounded-md text-slate-400 hover:text-white">15m</button>
+            <button onclick="setTimeframe('4h')" data-tf="4h" class="tf-btn px-2.5 py-1 rounded-md text-slate-400 hover:text-white">4h</button>
+          </div>
+
+          <!-- Mode Buttons -->
+          <div class="flex items-center bg-[#0b1117] rounded-lg border border-[#1a2634] p-0.5 font-mono text-[11px]">
+            <button id="btnLive" onclick="setMode('LIVE')" class="px-2.5 py-1 rounded-md font-semibold text-emerald-400 bg-emerald-500/15">LIVE</button>
+            <button id="btnSim" onclick="setMode('SIMULATION')" class="px-2.5 py-1 rounded-md font-semibold text-slate-400 hover:text-white">SIMULATION</button>
+            <button id="btnRetry" onclick="retryConnection()" class="px-2 py-1 rounded-md text-cyan-400 hover:bg-cyan-500/10" title="Reconnect Binance API">↻ RETRY</button>
+          </div>
+
+          <!-- Sonar Toggle -->
+          <button id="btnSonar" onclick="toggleSonar()" class="font-mono text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all">
+            SONAR ON
+          </button>
+        </div>
+
+        <!-- Multi-Timeframe Momentum Strip -->
+        <div class="flex items-center gap-1.5 font-mono text-[11px]">
+          <span class="text-slate-500 hidden 2xl:inline">MTF MOMENTUM:</span>
+          <div id="mtf1m" class="px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-300">1m: --</div>
+          <div id="mtf5m" class="px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-300">5m: --</div>
+          <div id="mtf15m" class="px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-300">15m: --</div>
+          <div id="mtf4h" class="px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-300">4h: --</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="max-w-[1640px] mx-auto px-3 sm:px-5 py-4 space-y-4">
+
+    <!-- ================================================================ -->
+    <!-- TAB 1: मुख्य टर्मिनल (MAIN TERMINAL)                              -->
+    <!-- ================================================================ -->
+    <section id="viewMain" class="space-y-4">
+
+      <!-- MAIN CHART & VPVR PANEL -->
+      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+        <!-- Chart Header & Layer Toggles -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 flex items-center gap-2">
+              <span class="text-cyan-400">▸</span> CLEAN PRICE ACTION + VOLUME PROFILE (VPVR)
+              <span class="hidden sm:inline text-[11px] font-normal text-slate-400">// 5-FORMULA S/R + DELTA FOOTPRINT + #1 GEO CONFLUENCE</span>
+            </h2>
+            <p class="text-[11px] text-slate-400 font-mono mt-0.5">
+              VPVR Split: <span class="text-emerald-300">Buy</span> vs <span class="text-rose-300">Sell</span> • Top MACD Rail: <span class="text-emerald-400">◆ Cross</span> <span class="text-lime-300">◎ Imminent</span> <span class="text-cyan-300">▲</span>/<span class="text-fuchsia-400">▼ Dual-Slope Trend</span>
+            </p>
+          </div>
+
+          <!-- Interactive Overlay Toggles -->
+          <div class="flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
+            <button id="togVwap" onclick="toggleLayer('vwap')" class="px-2.5 py-1 rounded-lg border border-amber-500/50 bg-amber-500/15 text-amber-300 font-semibold transition">● VWAP</button>
+            <button id="togVpvr" onclick="toggleLayer('vpvr')" class="px-2.5 py-1 rounded-lg border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 font-semibold transition">● VPVR</button>
+            <button id="togDelta" onclick="toggleLayer('candleDelta')" class="px-2.5 py-1 rounded-lg border border-cyan-500/50 bg-cyan-500/15 text-cyan-300 font-semibold transition">● CANDLE DELTA</button>
+            <button id="togObi" onclick="toggleLayer('obi')" class="px-2.5 py-1 rounded-lg border border-purple-500/50 bg-purple-500/15 text-purple-300 font-semibold transition">● OBI PRESSURE</button>
+            <button id="togMl" onclick="toggleLayer('mlSignals')" class="px-2.5 py-1 rounded-lg border border-fuchsia-500/50 bg-fuchsia-500/15 text-fuchsia-300 font-semibold transition">● ML SIGNALS</button>
+            <button id="togGeo" onclick="toggleLayer('geoPattern')" class="px-2.5 py-1 rounded-lg border border-sky-400/60 bg-sky-500/15 text-sky-300 font-semibold transition">● GEO #1 WINNER</button>
+            <button id="togMacdPred" onclick="toggleLayer('macdPredict')" class="px-2.5 py-1 rounded-lg border border-lime-400/60 bg-lime-500/15 text-lime-300 font-semibold transition">● MACD PREDICT</button>
+          </div>
+        </div>
+
+        <!-- Live OHLCV + Delta + OBI Readout Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-[#070b0f] border border-[#162230] font-mono-num text-[11px] sm:text-xs">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold" id="roTf">1m</span>
+            <span><span class="text-slate-500">O:</span> <span id="roO" class="text-slate-200">--</span></span>
+            <span><span class="text-slate-500">H:</span> <span id="roH" class="text-emerald-400">--</span></span>
+            <span><span class="text-slate-500">L:</span> <span id="roL" class="text-rose-400">--</span></span>
+            <span><span class="text-slate-500">C:</span> <span id="roC" class="text-white font-semibold">--</span></span>
+            <span><span class="text-slate-500">VOL:</span> <span id="roV" class="text-cyan-300">--</span></span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <span><span class="text-slate-500">BUY:</span> <span id="roBuy" class="text-emerald-300 font-semibold">--</span></span>
+            <span><span class="text-slate-500">SELL:</span> <span id="roSell" class="text-rose-300 font-semibold">--</span></span>
+            <span><span class="text-slate-500">NET Δ:</span> <span id="roDelta" class="font-bold text-emerald-400">--</span></span>
+            <span><span class="text-slate-500">OBI:</span> <span id="roObi" class="font-bold text-cyan-400">--</span></span>
+            <span id="roMacdPred" class="px-1.5 py-0.5 rounded border border-slate-700 bg-[#0e161f] text-slate-300 font-bold text-[10.5px]">MACD: NEUTRAL</span>
+          </div>
+        </div>
+
+        <!-- Main Candlestick + VPVR + #1 Geometric Pattern Canvas Wrapper -->
+        <div class="relative w-full h-[380px] sm:h-[445px] rounded-xl overflow-hidden bg-[#060a0e] border border-[#162230]">
+          <canvas id="mainChartCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+          <div id="chartTooltip" class="hidden pointer-events-none absolute z-20 p-2.5 rounded-xl bg-[#0b1117]/95 border border-cyan-500/40 shadow-2xl font-mono-num text-[11px] space-y-1 min-w-[205px]"></div>
+        </div>
+
+        <!-- LIVE GEOMETRIC STRUCTURE PROGRESS TRACKER BAR (STRICT TIMEFRAME-ISOLATED) -->
+        <div id="liveGeoTrackerBar" class="rounded-xl bg-[#080e15] border border-cyan-500/30 p-3 space-y-2.5">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <span id="geoTrackerDirBadge" class="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">BULLISH #1</span>
+              <div class="font-mono">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span id="geoTrackerName" class="text-xs sm:text-sm font-bold text-white">Scanning 123 Patterns...</span>
+                  <span id="geoTrackerMatch" class="text-xs font-bold text-cyan-300">--%</span>
+                  <span id="geoTrackerConf" class="text-[11px] px-1.5 py-0.5 rounded bg-[#0e161f] border border-[#1a2634] text-amber-300">CONFLUENCE: --</span>
+                </div>
+                <div id="geoTrackerReason" class="text-[10.5px] text-slate-400 mt-0.5">Strict Timeframe Isolation Active</div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
+              <button id="btnUnpinGeo" onclick="unpinPattern()" class="hidden px-2.5 py-1 rounded-lg border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 font-semibold">
+                ✕ UNPIN (AUTO #1)
+              </button>
+              <button onclick="switchTab('library')" class="px-2.5 py-1 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 font-semibold">
+                ALL 123 PATTERNS →
+              </button>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Live Stage Pills + Strict 4-State Legend -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pt-2 border-t border-[#15212f]">
+            <div id="geoTrackerSteps" class="flex flex-wrap items-center gap-1.5 font-mono text-[11px]"></div>
+            <div class="flex flex-wrap items-center gap-3 font-mono text-[10px] text-slate-400 shrink-0">
+              <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>PASS (%)</span>
+              <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span>FAIL</span>
+              <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-sky-400 pulse-dot"></span>TESTING</span>
+              <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full border-[1.5px] border-slate-400 bg-transparent"></span>AWAITING TEST</span>
+            </div>
+          </div>
+
+          <!-- Same-Day / Recent Last-Point Fail or Win Callout Strip -->
+          <div id="geoHistoryCallout" class="hidden rounded-lg px-3 py-2 font-mono text-[11px] flex flex-wrap items-center justify-between gap-2 border"></div>
+        </div>
+
+        <!-- COMPACT RECENT HISTORY & LAST-POINT FAIL ALERTS MINI-CARD -->
+        <div class="rounded-xl bg-[#080e15] border border-[#1a2634] p-2.5 sm:p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 font-mono text-[11px] font-bold text-slate-200">
+              <span class="text-amber-400">★</span> RECENT WINS &amp; LAST-POINT FAIL ALERTS
+              <span id="miniHistCountBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-[#0e161f] border border-[#1a2634] text-cyan-300">0 SAVED</span>
+            </div>
+            <div class="flex items-center gap-2 font-mono text-[10.5px]">
+              <button onclick="fetchPatternHistoryFromGoogleSheet(true)" class="px-2 py-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 font-semibold transition" title="Fetch saved history from Google Sheet">
+                ☁️ SYNC SHEET
+              </button>
+              <button onclick="openSheetConfigModal()" class="px-2 py-1 rounded-md border border-slate-600/60 bg-slate-800/40 text-slate-300 hover:border-cyan-400 hover:text-cyan-300 font-semibold transition" title="Configure Google Apps Script Web App URL">
+                ⚙️ URL
+              </button>
+              <button onclick="simulateLastPointFail()" class="px-2 py-1 rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-semibold transition">
+                ⚡ TEST LAST-PT FAIL
+              </button>
+              <button onclick="switchTab('history')" class="px-2 py-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 font-semibold transition">
+                FULL HISTORY LOG →
+              </button>
+            </div>
+          </div>
+          <div id="mainHistoryMiniList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 font-mono text-[10.5px]"></div>
+        </div>
+
+        <!-- A. COMPACT MTF RSI, MACD & ML OUTCOME STRIP + FUTURE INDICATION BOX -->
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 pt-1">
+          <div class="xl:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-2.5" id="mtfOutcomeStrip"></div>
+
+          <div class="xl:col-span-4 flex flex-col justify-center">
+            <div id="signalBox" class="h-full rounded-xl p-3 border border-cyan-500/30 bg-cyan-500/10 space-y-1.5 transition-all flex flex-col justify-between">
+              <div class="flex items-center justify-between font-mono text-[10px] tracking-wider uppercase text-slate-400">
+                <span>भविष्य संकेत // FUTURE INDICATION</span>
+                <span id="signalConfidence" class="text-cyan-300 font-bold">CONF: --%</span>
+              </div>
+              <div id="signalTitle" class="font-mono text-xs sm:text-sm font-bold text-cyan-300">
+                NEUTRAL CONSOLIDATION
+              </div>
+              <p id="signalDesc" class="text-[11px] text-slate-300 leading-snug">
+                बाज़ार में संतुलन बना हुआ है। सपोर्ट या रेजिस्टेंस पर वॉल्यूम डेल्टा, OBI और MTF कन्फ्लुएंस की प्रतीक्षा करें।
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A2. MULTI-TIMEFRAME PREDICTIVE MACD SUB-CHARTS (1m | 5m | 15m | 4h) -->
+      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 flex items-center gap-2">
+              <span class="text-lime-400">▸</span> MULTI-TIMEFRAME PREDICTIVE MACD MATRIX
+              <span class="hidden sm:inline text-[11px] font-normal text-slate-400">// SLOPE ANGLE + CONVERGENCE DISTANCE + DUAL-LINE TREND (1m | 5m | 15m | 4h)</span>
+            </h2>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5 font-mono text-[10.5px]">
+            <span class="text-cyan-400">― MACD</span>
+            <span class="text-amber-400">― Signal</span>
+            <span class="text-emerald-400">◆ Cross</span>
+            <span class="text-lime-300">◎ Imminent</span>
+            <span class="text-cyan-300">▲</span><span class="text-fuchsia-400">▼ Dual Trend</span>
+            <button onclick="switchTab('formula')" class="px-2 py-0.5 rounded-md border border-lime-500/40 bg-lime-500/10 text-lime-300 hover:bg-lime-500/20 font-semibold transition">
+              ⚙️ FORMULA LAB →
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          <!-- 1m MACD Sub-Chart -->
+          <div class="bg-[#0a1017] border border-[#1a2634] rounded-xl p-2.5 space-y-2">
+            <div class="flex items-center justify-between gap-1.5 font-mono text-[11px] border-b border-[#162230] pb-1.5">
+              <span class="font-bold text-cyan-300">1M MACD</span>
+              <span id="macdPredBadge_1m" class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border border-slate-700 bg-slate-800/60 text-slate-300">NEUTRAL</span>
+            </div>
+            <div class="relative w-full h-[132px] rounded-lg overflow-hidden bg-[#060a0e] border border-[#162230]">
+              <canvas id="macdSubCanvas_1m" class="w-full h-full block"></canvas>
+            </div>
+            <div id="macdPredStats_1m" class="flex items-center justify-between font-mono-num text-[10px] text-slate-400">
+              <span>∠M: 0°</span><span>∠S: 0°</span><span>Dist: 0%</span>
+            </div>
+          </div>
+
+          <!-- 5m MACD Sub-Chart -->
+          <div class="bg-[#0a1017] border border-[#1a2634] rounded-xl p-2.5 space-y-2">
+            <div class="flex items-center justify-between gap-1.5 font-mono text-[11px] border-b border-[#162230] pb-1.5">
+              <span class="font-bold text-cyan-300">5M MACD</span>
+              <span id="macdPredBadge_5m" class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border border-slate-700 bg-slate-800/60 text-slate-300">NEUTRAL</span>
+            </div>
+            <div class="relative w-full h-[132px] rounded-lg overflow-hidden bg-[#060a0e] border border-[#162230]">
+              <canvas id="macdSubCanvas_5m" class="w-full h-full block"></canvas>
+            </div>
+            <div id="macdPredStats_5m" class="flex items-center justify-between font-mono-num text-[10px] text-slate-400">
+              <span>∠M: 0°</span><span>∠S: 0°</span><span>Dist: 0%</span>
+            </div>
+          </div>
+
+          <!-- 15m MACD Sub-Chart -->
+          <div class="bg-[#0a1017] border border-[#1a2634] rounded-xl p-2.5 space-y-2">
+            <div class="flex items-center justify-between gap-1.5 font-mono text-[11px] border-b border-[#162230] pb-1.5">
+              <span class="font-bold text-cyan-300">15M MACD</span>
+              <span id="macdPredBadge_15m" class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border border-slate-700 bg-slate-800/60 text-slate-300">NEUTRAL</span>
+            </div>
+            <div class="relative w-full h-[132px] rounded-lg overflow-hidden bg-[#060a0e] border border-[#162230]">
+              <canvas id="macdSubCanvas_15m" class="w-full h-full block"></canvas>
+            </div>
+            <div id="macdPredStats_15m" class="flex items-center justify-between font-mono-num text-[10px] text-slate-400">
+              <span>∠M: 0°</span><span>∠S: 0°</span><span>Dist: 0%</span>
+            </div>
+          </div>
+
+          <!-- 4h MACD Sub-Chart -->
+          <div class="bg-[#0a1017] border border-[#1a2634] rounded-xl p-2.5 space-y-2">
+            <div class="flex items-center justify-between gap-1.5 font-mono text-[11px] border-b border-[#162230] pb-1.5">
+              <span class="font-bold text-cyan-300">4H MACD</span>
+              <span id="macdPredBadge_4h" class="px-1.5 py-0.5 rounded text-[9.5px] font-bold border border-slate-700 bg-slate-800/60 text-slate-300">NEUTRAL</span>
+            </div>
+            <div class="relative w-full h-[132px] rounded-lg overflow-hidden bg-[#060a0e] border border-[#162230]">
+              <canvas id="macdSubCanvas_4h" class="w-full h-full block"></canvas>
+            </div>
+            <div id="macdPredStats_4h" class="flex items-center justify-between font-mono-num text-[10px] text-slate-400">
+              <span>∠M: 0°</span><span>∠S: 0°</span><span>Dist: 0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B. 3-COLUMN SIDE-BY-SIDE VOLUME DELTA + CVD + OBI MATRIX (1m | 5m | 15m) -->
+      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 flex items-center gap-2">
+            <span class="text-cyan-400">▸</span> MULTI-TIMEFRAME ORDER FLOW MATRIX
+            <span class="hidden sm:inline text-[11px] font-normal text-slate-400">// VOLUME DELTA + CVD + ORDER BOOK IMBALANCE (1m | 5m | 15m)</span>
+          </h2>
+          <div class="flex items-center gap-3 font-mono text-[11px]">
+            <span class="text-emerald-400">■ Net Buy Δ</span>
+            <span class="text-rose-400">■ Net Sell Δ</span>
+            <span class="text-cyan-400">― CVD Curve</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <!-- 1m Column -->
+          <div class="bg-[#0a1017] border border-[#1a2634] rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between font-mono text-xs border-b border-[#162230] pb-1.5">
+              <span class="font-bold text-cyan-300">1-MINUTE FLOW</span>
+              <div class="flex items-center gap-2 text-[11px] font-mono-num">
+                <span>Δ: <strong id="matDelta_1m" class="text-emerald-400">+0.0</strong></span>
+                <span class="text-slate-600">|</span>
+                <span>CVD: <strong id="matCvd_1m" class="text-cyan-300">+0.0</strong></span>
+              </div>
+            </div>
+            <div class="relative w-full h-[125px] rounded-lg overflow-hidden bg-[#060a0e] border border-[#162230]">
+              <canvas id="deltaChartCanvas_1m" class="w-full h-full block"></canvas>
+            </div>
+            <div class="space-y-1.5 pt-0.5">
+              <div class="flex items-center justify-between font-mono text-[10px]">
+                <span class="text-slate-400">ORDER BOOK IMBALANCE (1m)</span>
+                <span id="obiBadge_1m" class="px-1.5 py-0.5 rounded font-bold bg-cyan-500/15 text-cyan-300">NEUTRAL 0.0%</span>
+              </div>
+              <div class="w-full h-3 rounded-full bg-[#111c27] overflow-hidden flex border border-[#1e2d3d]">
+                <div id="obiBidBar_1m" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300" style="width: 50%"></div>
+                <div id="obiAskBar_1m" class="h-full bg-gradient-to-r from-rose-400 to-rose-600 transition-all duration-300" style="width: 50%"></div>
+              </div>
+              <div class="flex items-center justify-between font-mono-num text-[10px]">
+                <span class="text-emerald-400">BUY: <strong id="obiBidPct_1m">50%</strong> (<span id="obiBidVol_1m">0</span> BTC)</span>
+                <span class="text-rose-400">SELL: <strong id="obiAskPct_1m">50%</strong> (<span id="obiAskVol_1m">0</span> BTC)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5m Column -->
+          <div class="bg-[#0a1017] border border-[#1a2634] rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between font-mono text-xs border-b border-[#162230] pb-1.5">
+              <span class="font-bold text-cyan-300">5-MINUTE FLOW</span>
+              <div class="flex items-center gap-2 text-[11px] font-mono-num">
+                <span>Δ: <strong id="matDelta_5m" class="text-emerald-400">+0.0</strong></span>
+                <span class="text-slate-600">|</span>
+                <span>CVD: <strong id="matCvd_5m" class="text-cyan-300">+0.0</strong></span>
+              </div>
+            </div>
+            <div class="relative w-full h-[125px] rounded-lg overflow-hidden bg-[#060a0e] border border-[#162230]">
+              <canvas id="deltaChartCanvas_5m" class="w-full h-full block"></canvas>
+            </div>
+            <div class="space-y-1.5 pt-0.5">
+              <div class="flex items-center justify-between font-mono text-[10px]">
+                <span class="text-slate-400">ORDER BOOK IMBALANCE (5m)</span>
+                <span id="obiBadge_5m" class="px-1.5 py-0.5 rounded font-bold bg-cyan-500/15 text-cyan-300">NEUTRAL 0.0%</span>
+              </div>
+              <div class="w-full h-3 rounded-full bg-[#111c27] overflow-hidden flex border border-[#1e2d3d]">
+                <div id="obiBidBar_5m" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300" style="width: 50%"></div>
+                <div id="obiAskBar_5m" class="h-full bg-gradient-to-r from-rose-400 to-rose-600 transition-all duration-300" style="width: 50%"></div>
+              </div>
+              <div class="flex items-center justify-between font-mono-num text-[10px]">
+                <span class="text-emerald-400">BUY: <strong id="obiBidPct_5m">50%</strong> (<span id="obiBidVol_5m">0</span> BTC)</span>
+                <span class="text-rose-400">SELL: <strong id="obiAskPct_5m">50%</strong> (<span id="obiAskVol_5m">0</span> BTC)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 15m Column -->
+          <div class="bg-[#0a1017] border border-[#1a2634] rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between font-mono text-xs border-b border-[#162230] pb-1.5">
+              <span class="font-bold text-cyan-300">15-MINUTE FLOW</span>
+              <div class="flex items-center gap-2 text-[11px] font-mono-num">
+                <span>Δ: <strong id="matDelta_15m" class="text-emerald-400">+0.0</strong></span>
+                <span class="text-slate-600">|</span>
+                <span>CVD: <strong id="matCvd_15m" class="text-cyan-300">+0.0</strong></span>
+              </div>
+            </div>
+            <div class="relative w-full h-[125px] rounded-lg overflow-hidden bg-[#060a0e] border border-[#162230]">
+              <canvas id="deltaChartCanvas_15m" class="w-full h-full block"></canvas>
+            </div>
+            <div class="space-y-1.5 pt-0.5">
+              <div class="flex items-center justify-between font-mono text-[10px]">
+                <span class="text-slate-400">ORDER BOOK IMBALANCE (15m)</span>
+                <span id="obiBadge_15m" class="px-1.5 py-0.5 rounded font-bold bg-cyan-500/15 text-cyan-300">NEUTRAL 0.0%</span>
+              </div>
+              <div class="w-full h-3 rounded-full bg-[#111c27] overflow-hidden flex border border-[#1e2d3d]">
+                <div id="obiBidBar_15m" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300" style="width: 50%"></div>
+                <div id="obiAskBar_15m" class="h-full bg-gradient-to-r from-rose-400 to-rose-600 transition-all duration-300" style="width: 50%"></div>
+              </div>
+              <div class="flex items-center justify-between font-mono-num text-[10px]">
+                <span class="text-emerald-400">BUY: <strong id="obiBidPct_15m">50%</strong> (<span id="obiBidVol_15m">0</span> BTC)</span>
+                <span class="text-rose-400">SELL: <strong id="obiAskPct_15m">50%</strong> (<span id="obiAskVol_15m">0</span> BTC)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C. ORIGINAL 4-CARD S/R SUMMARY GRID -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="srCardsGrid"></div>
+
+      <!-- D. [ 180° PROXIMITY RADAR ] SECTION — 3 SIDE-BY-SIDE RADARS (1m | 5m | 15m) -->
+      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <h2 class="font-mono text-xs sm:text-sm font-bold tracking-wider text-cyan-400">
+              [ 180° PROXIMITY RADAR ]
+            </h2>
+            <span class="text-[11px] font-mono text-slate-400 hidden sm:inline">MULTI-TIMEFRAME OVERHEAD RESISTANCE vs UNDERLYING SUPPORT</span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 font-mono text-xs">
+            <div class="flex items-center gap-2 bg-[#0b1117] px-2.5 py-1 rounded-lg border border-[#1a2634]">
+              <span class="text-slate-400 text-[11px]">RANGE</span>
+              <input id="radarRangeSlider" type="range" min="100" max="500" step="10" value="250" class="w-24 sm:w-32" oninput="onRadarRangeManual(this.value)" />
+              <span id="radarRangeVal" class="text-cyan-300 font-bold w-11 text-right">$250</span>
+              <button id="radarAutoBtn" onclick="toggleRadarAuto()" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">AUTO</button>
+            </div>
+            <div class="px-2.5 py-1 rounded-lg bg-[#0b1117] border border-[#1a2634] text-[11px] font-mono-num">
+              PING: <span id="pingVal" class="text-emerald-400 font-bold">42 ms</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="proximityAlertBanner" class="hidden rounded-xl px-3.5 py-2 border border-amber-500/50 bg-amber-500/10 flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+          <div class="flex items-center gap-2 text-amber-300 font-bold">
+            <span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400 pulse-dot"></span>
+            <span id="proximityAlertText">ACCELERATING INTO ZONE (BREAKOUT RISK)</span>
+          </div>
+          <span id="proximityAlertZone" class="text-amber-200 text-[11px]">--</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="relative w-full h-[270px] sm:h-[290px] rounded-xl overflow-hidden bg-[#060a0e] border border-[#162230]">
+            <div class="pointer-events-none absolute top-2 left-2.5 z-10 font-mono text-[10px] font-bold text-cyan-300 bg-[#0b1117]/85 px-2 py-0.5 rounded border border-cyan-500/30">1-MINUTE RADAR</div>
+            <div class="pointer-events-none absolute top-2 right-2.5 z-10 font-mono text-[9.5px] text-rose-400/90">R1/R2 ↑</div>
+            <div class="pointer-events-none absolute bottom-2 right-2.5 z-10 font-mono text-[9.5px] text-emerald-400/90">S1/S2 ↓</div>
+            <canvas id="radarCanvas_1m" class="w-full h-full block"></canvas>
+          </div>
+          <div class="relative w-full h-[270px] sm:h-[290px] rounded-xl overflow-hidden bg-[#060a0e] border border-[#162230]">
+            <div class="pointer-events-none absolute top-2 left-2.5 z-10 font-mono text-[10px] font-bold text-cyan-300 bg-[#0b1117]/85 px-2 py-0.5 rounded border border-cyan-500/30">5-MINUTE RADAR</div>
+            <div class="pointer-events-none absolute top-2 right-2.5 z-10 font-mono text-[9.5px] text-rose-400/90">R1/R2 ↑</div>
+            <div class="pointer-events-none absolute bottom-2 right-2.5 z-10 font-mono text-[9.5px] text-emerald-400/90">S1/S2 ↓</div>
+            <canvas id="radarCanvas_5m" class="w-full h-full block"></canvas>
+          </div>
+          <div class="relative w-full h-[270px] sm:h-[290px] rounded-xl overflow-hidden bg-[#060a0e] border border-[#162230]">
+            <div class="pointer-events-none absolute top-2 left-2.5 z-10 font-mono text-[10px] font-bold text-cyan-300 bg-[#0b1117]/85 px-2 py-0.5 rounded border border-cyan-500/30">15-MINUTE RADAR</div>
+            <div class="pointer-events-none absolute top-2 right-2.5 z-10 font-mono text-[9.5px] text-rose-400/90">R1/R2 ↑</div>
+            <div class="pointer-events-none absolute bottom-2 right-2.5 z-10 font-mono text-[9.5px] text-emerald-400/90">S1/S2 ↓</div>
+            <canvas id="radarCanvas_15m" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono">
+          <div class="rounded-xl bg-[#0a1017] border border-[#1a2634] p-2.5">
+            <div class="text-[10px] text-slate-400">VELOCITY (v)</div>
+            <div id="telVelocity" class="text-sm sm:text-base font-bold text-slate-100 font-mono-num mt-0.5">0.00 $/s</div>
+          </div>
+          <div class="rounded-xl bg-[#0a1017] border border-[#1a2634] p-2.5">
+            <div class="text-[10px] text-slate-400">ACCEL (a)</div>
+            <div id="telAccel" class="text-sm sm:text-base font-bold text-cyan-400 font-mono-num mt-0.5">0.00 $/s²</div>
+          </div>
+          <div class="rounded-xl bg-[#0a1017] border border-[#1a2634] p-2.5">
+            <div class="text-[10px] text-slate-400">NEAREST ZONE</div>
+            <div id="telNearest" class="text-sm sm:text-base font-bold text-amber-300 font-mono-num mt-0.5">--</div>
+          </div>
+          <div class="rounded-xl bg-[#0a1017] border border-[#1a2634] p-2.5">
+            <div class="text-[10px] text-slate-400">EST. TIME OF ARRIVAL (ETA)</div>
+            <div id="telEta" class="text-sm sm:text-base font-bold text-emerald-400 font-mono-num mt-0.5">--</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- TAB 2: पैटर्न लाइब्रेरी (123 PATTERNS SIDE-BY-SIDE LIBRARY)     -->
+    <!-- ================================================================ -->
+    <section id="viewLibrary" class="hidden space-y-4">
+      <!-- Library Top Controls & Stats -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-mono text-sm sm:text-base font-bold text-cyan-400">
+              पैटर्न लाइब्रेरी // 123 GEOMETRIC PATTERNS (58 BULLISH vs 65 BEARISH)
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Overall % = <span class="text-cyan-300 font-mono">Sum(Passed Dot %) / Total Points</span> (0% if FAIL). Unreached points remain <span class="text-slate-200 font-semibold">Hollow Gray (AWAITING TEST)</span>. Click any pattern to view individual dot % &amp; pin to Main Chart.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 font-mono text-xs">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+              BULLISH &gt;70%: <strong id="libBullHot">0</strong> / 58
+            </span>
+            <span class="px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300">
+              BEARISH &gt;70%: <strong id="libBearHot">0</strong> / 65
+            </span>
+          </div>
+        </div>
+
+        <!-- Search, Filter, Sort -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#162230]">
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="libSearch" type="text" placeholder="Search ID or Pattern (e.g. B-01, Double Bottom, Wedge)..." oninput="renderPatternLibrary()"
+              class="w-64 sm:w-80 px-3 py-1.5 rounded-lg bg-[#070b0f] border border-[#1a2634] focus:border-cyan-500 outline-none text-xs font-mono text-slate-200 placeholder-slate-500" />
+            <div class="flex flex-wrap items-center gap-1 bg-[#070b0f] p-1 rounded-lg border border-[#1a2634] font-mono text-[11px]">
+              <button onclick="setLibFilter('ALL')" data-lf="ALL" class="lf-btn px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-300 font-bold">ALL (123)</button>
+              <button onclick="setLibFilter('HOT')" data-lf="HOT" class="lf-btn px-2.5 py-1 rounded text-slate-400 hover:text-white">&gt;70% MATCH</button>
+              <button onclick="setLibFilter('PASS')" data-lf="PASS" class="lf-btn px-2.5 py-1 rounded text-slate-400 hover:text-white">PASS</button>
+              <button onclick="setLibFilter('AWAITING')" data-lf="AWAITING" class="lf-btn px-2.5 py-1 rounded text-slate-400 hover:text-white">AWAITING</button>
+              <button onclick="setLibFilter('FAIL')" data-lf="FAIL" class="lf-btn px-2.5 py-1 rounded text-slate-400 hover:text-white">FAIL</button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 font-mono text-xs">
+            <span class="text-slate-400">SORT (<span id="libSortTfLabel" class="text-cyan-300 uppercase">1m</span>):</span>
+            <select id="libSort" onchange="renderPatternLibrary()" class="bg-[#070b0f] border border-[#1a2634] rounded-lg px-2.5 py-1.5 text-xs text-cyan-300 outline-none">
+              <option value="match">Highest Overall %</option>
+              <option value="confluence">Confluence Score</option>
+              <option value="id">Pattern ID (B-01 / S-01)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDE-BY-SIDE COMPARISON COLUMNS: BULLISH (LEFT) vs BEARISH (RIGHT) -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <!-- LEFT COLUMN: 58 BULLISH PATTERNS -->
+        <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-emerald-500/30 pb-2">
+            <h3 class="font-mono text-sm font-bold text-emerald-400 flex items-center gap-2">
+              <span>▲</span> BULLISH STRUCTURES (58 PATTERNS: B-01 – B-58)
+            </h3>
+            <span id="bullShowingCount" class="font-mono text-[11px] text-slate-400">Showing 58</span>
+          </div>
+          <div id="bullishLibraryList" class="space-y-2.5 max-h-[960px] overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- RIGHT COLUMN: 65 BEARISH PATTERNS -->
+        <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-rose-500/30 pb-2">
+            <h3 class="font-mono text-sm font-bold text-rose-400 flex items-center gap-2">
+              <span>▼</span> BEARISH STRUCTURES (65 PATTERNS: S-01 – S-65)
+            </h3>
+            <span id="bearShowingCount" class="font-mono text-[11px] text-slate-400">Showing 65</span>
+          </div>
+          <div id="bearishLibraryList" class="space-y-2.5 max-h-[960px] overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- TAB 3: इतिहास लॉग (PATTERN HISTORY & LAST-POINT FAIL TRACKER)    -->
+    <!-- ================================================================ -->
+    <section id="viewHistory" class="hidden space-y-4">
+      <!-- History Header & KPI Strip -->
+      <div class="glass-panel rounded-2xl p-4 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-mono text-sm sm:text-base font-bold text-amber-400 flex items-center gap-2">
+              <span>📜</span> इतिहास लॉग // PATTERN HISTORY &amp; LAST-POINT FAIL TRACKER
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Automatically saves every completed <span class="text-emerald-300 font-semibold">WINNING PATTERN</span> and every <span class="text-rose-400 font-semibold">FAILED AT LAST POINT</span> event to <span class="font-mono text-cyan-300">localStorage</span>. Same-day/recent repeat failures trigger automatic warnings on the Main Chart &amp; Library.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 font-mono text-xs">
+            <span id="sheetSyncBadge" class="px-2.5 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 font-semibold">
+              ☁️ SHEET: READY
+            </span>
+            <button onclick="fetchPatternHistoryFromGoogleSheet(true)" class="px-3 py-1.5 rounded-lg border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 font-bold transition">
+              ↻ SYNC SHEET
+            </button>
+            <button onclick="openSheetConfigModal()" class="px-3 py-1.5 rounded-lg border border-slate-600/60 bg-slate-800/40 text-slate-300 hover:border-cyan-400 hover:text-cyan-300 font-bold transition" title="Configure Google Apps Script Web App URL">
+              ⚙️ URL
+            </button>
+            <button onclick="simulateLastPointFail()" class="px-3 py-1.5 rounded-lg border border-amber-500/50 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 font-bold transition">
+              ⚡ SIMULATE LAST-PT FAIL
+            </button>
+            <button onclick="exportPatternHistory()" class="px-3 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 font-semibold transition">
+              📥 EXPORT JSON
+            </button>
+            <button id="btnClearHist" onclick="clearPatternHistory()" class="px-3 py-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 font-semibold transition">
+              🗑️ CLEAR HISTORY
+            </button>
+          </div>
+        </div>
+
+        <!-- Inline Status Toast (No alert/confirm) -->
+        <div id="histToast" class="hidden rounded-xl px-3 py-2 font-mono text-xs border border-cyan-500/40 bg-cyan-500/10 text-cyan-200"></div>
+
+        <!-- Top KPI Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 font-mono">
+          <div class="rounded-xl bg-[#0a1017] border border-[#1a2634] p-3">
+            <div class="text-[10px] text-slate-400">TOTAL SAVED</div>
+            <div id="kpiHistTotal" class="text-lg font-bold text-white font-mono-num mt-0.5">0</div>
+          </div>
+          <div class="rounded-xl bg-[#0a1017] border border-emerald-500/30 p-3">
+            <div class="text-[10px] text-emerald-400">🏆 WINNING PATTERNS</div>
+            <div id="kpiHistWins" class="text-lg font-bold text-emerald-300 font-mono-num mt-0.5">0</div>
+          </div>
+          <div class="rounded-xl bg-[#0a1017] border border-rose-500/40 p-3">
+            <div class="text-[10px] text-rose-400">🚨 FAILED AT LAST POINT</div>
+            <div id="kpiHistLastPtFails" class="text-lg font-bold text-rose-300 font-mono-num mt-0.5">0</div>
+          </div>
+          <div class="rounded-xl bg-[#0a1017] border border-amber-500/30 p-3">
+            <div class="text-[10px] text-amber-400">TODAY'S EVENTS</div>
+            <div id="kpiHistToday" class="text-lg font-bold text-amber-300 font-mono-num mt-0.5">0</div>
+          </div>
+          <div class="rounded-xl bg-[#0a1017] border border-cyan-500/30 p-3 col-span-2 sm:col-span-1">
+            <div class="text-[10px] text-cyan-400">WIN RATE %</div>
+            <div id="kpiHistWinRate" class="text-lg font-bold text-cyan-300 font-mono-num mt-0.5">--%</div>
+          </div>
+        </div>
+
+        <!-- Filters Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-[#162230]">
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="histSearch" type="text" placeholder="Search Pattern ID or Name..." oninput="renderHistoryTab()"
+              class="w-56 sm:w-64 px-3 py-1.5 rounded-lg bg-[#070b0f] border border-[#1a2634] focus:border-cyan-500 outline-none text-xs font-mono text-slate-200 placeholder-slate-500" />
+            <div class="flex flex-wrap items-center gap-1 bg-[#070b0f] p-1 rounded-lg border border-[#1a2634] font-mono text-[11px]">
+              <button onclick="setHistFilter('ALL')" data-hf="ALL" class="hf-btn px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-300 font-bold">ALL</button>
+              <button onclick="setHistFilter('WIN')" data-hf="WIN" class="hf-btn px-2.5 py-1 rounded text-slate-400 hover:text-white">🏆 WINS ONLY</button>
+              <button onclick="setHistFilter('FAIL_LAST_POINT')" data-hf="FAIL_LAST_POINT" class="hf-btn px-2.5 py-1 rounded text-slate-400 hover:text-white">🚨 FAILED AT LAST POINT</button>
+              <button onclick="setHistFilter('FAIL_ALL')" data-hf="FAIL_ALL" class="hf-btn px-2.5 py-1 rounded text-slate-400 hover:text-white">❌ ALL FAILS</button>
+              <button onclick="setHistFilter('TODAY')" data-hf="TODAY" class="hf-btn px-2.5 py-1 rounded text-slate-400 hover:text-white">TODAY ONLY</button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1 bg-[#070b0f] p-1 rounded-lg border border-[#1a2634] font-mono text-[11px]">
+            <button onclick="setHistTfFilter('ALL')" data-htf="ALL" class="htf-btn px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 font-bold">ALL TF</button>
+            <button onclick="setHistTfFilter('1m')" data-htf="1m" class="htf-btn px-2 py-1 rounded text-slate-400 hover:text-white">1m</button>
+            <button onclick="setHistTfFilter('5m')" data-htf="5m" class="htf-btn px-2 py-1 rounded text-slate-400 hover:text-white">5m</button>
+            <button onclick="setHistTfFilter('15m')" data-htf="15m" class="htf-btn px-2 py-1 rounded text-slate-400 hover:text-white">15m</button>
+            <button onclick="setHistTfFilter('4h')" data-htf="4h" class="htf-btn px-2 py-1 rounded text-slate-400 hover:text-white">4h</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed History Table -->
+      <div class="glass-panel rounded-2xl p-3 sm:p-4">
+        <div class="overflow-x-auto rounded-xl border border-[#1a2634] bg-[#0a1017]">
+          <table class="w-full text-left font-mono text-xs">
+            <thead class="bg-[#0e161f] text-slate-400 border-b border-[#1a2634] text-[10.5px]">
+              <tr>
+                <th class="px-3 py-2.5">TIMESTAMP</th>
+                <th class="px-3 py-2.5">TF</th>
+                <th class="px-3 py-2.5">PATTERN</th>
+                <th class="px-3 py-2.5">DIRECTION</th>
+                <th class="px-3 py-2.5">OUTCOME</th>
+                <th class="px-3 py-2.5">STAGE PROGRESS</th>
+                <th class="px-3 py-2.5">PRICE</th>
+                <th class="px-3 py-2.5 text-right">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-[#162230] text-slate-200 font-mono-num"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <!-- TAB 4: फ़ॉर्मूला लैब (ALL 8 ENGINES)                             -->
+    <!-- ================================================================ -->
+    <section id="viewLab" class="hidden space-y-4">
+      <div class="glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-mono text-sm sm:text-base font-bold text-cyan-400">
+            फ़ॉर्मूला लैब // BACKEND ENGINE, MTF INDICATORS, ML &amp; 123-PATTERN CONFLUENCE LAB
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            यहाँ किए गए किसी भी बदलाव का असर तुरंत मुख्य टर्मिनल (Main Terminal), पैटर्न लाइब्रेरी (123), रडार और कॉन्फ्लुएंस विनर पर दिखाई देगा।
+          </p>
+        </div>
+        <button onclick="resetLabDefaults()" class="font-mono text-xs px-3 py-1.5 rounded-lg border border-slate-600 hover:border-cyan-400 text-slate-300 hover:text-cyan-300 transition">
+          ↺ RESET DEFAULTS
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- 1. Order Book Imbalance (OBI) Engine -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-emerald-400">1. ORDER BOOK IMBALANCE (OBI) ENGINE</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">LIVE DEPTH</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#060a0e] border border-[#162230] font-mono text-xs text-cyan-300 overflow-x-auto">
+            OBI = (BidVol - AskVol) / (BidVol + AskVol) × 100
+          </div>
+          <div class="grid grid-cols-3 gap-2 font-mono-num text-xs">
+            <div class="p-2.5 rounded-xl bg-[#0a1017] border border-[#1a2634]">
+              <div class="text-[10px] text-slate-400">BID DEPTH</div>
+              <div id="labBidDepth" class="text-emerald-400 font-bold mt-0.5">-- BTC</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0a1017] border border-[#1a2634]">
+              <div class="text-[10px] text-slate-400">ASK DEPTH</div>
+              <div id="labAskDepth" class="text-rose-400 font-bold mt-0.5">-- BTC</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0a1017] border border-[#1a2634]">
+              <div class="text-[10px] text-slate-400">LIVE OBI %</div>
+              <div id="labObiLive" class="text-cyan-400 font-bold mt-0.5">--%</div>
+            </div>
+          </div>
+          <div class="space-y-3 pt-1">
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Order Book Depth Levels (गहराई स्तर)</span>
+                <span id="valObiDepth" class="text-cyan-400 font-bold">20 Levels</span>
+              </div>
+              <input id="slObiDepth" type="range" min="5" max="50" step="5" value="20" class="w-full" oninput="updateLabParam('obiDepth', +this.value)" />
+            </div>
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Imbalance Alert Threshold (सिग्नल सीमा)</span>
+                <span id="valObiThresh" class="text-amber-400 font-bold">18%</span>
+              </div>
+              <input id="slObiThresh" type="range" min="5" max="50" step="1" value="18" class="w-full" oninput="updateLabParam('obiThreshold', +this.value)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Volume Delta & Footprint Engine -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-cyan-400">2. VOLUME DELTA &amp; FOOTPRINT ENGINE</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">CANDLE PRESSURE</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#060a0e] border border-[#162230] font-mono text-xs text-slate-300 space-y-1">
+            <div><span class="text-emerald-400">BuyVol</span> = TotalVol × ((Close - Low) / (High - Low))</div>
+            <div><span class="text-rose-400">SellVol</span> = TotalVol - BuyVol</div>
+            <div><span class="text-cyan-400">CVD[i]</span> = CVD[i-1] + (BuyVol - SellVol)</div>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Absorption Threshold (रिवर्सल पहचान सीमा)</span>
+                <span id="valAbsThresh" class="text-cyan-400 font-bold">35%</span>
+              </div>
+              <input id="slAbsThresh" type="range" min="15" max="75" step="5" value="35" class="w-full" oninput="updateLabParam('absorptionThreshold', +this.value)" />
+            </div>
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Delta Coloring Sensitivity (कैंडल हाइलाइट)</span>
+                <span id="valDeltaSens" class="text-amber-400 font-bold">25%</span>
+              </div>
+              <input id="slDeltaSens" type="range" min="10" max="60" step="5" value="25" class="w-full" oninput="updateLabParam('deltaSensitivity', +this.value)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. VPVR Buy/Sell Split Engine -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-amber-400">3. VPVR BUY/SELL SPLIT ENGINE</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">GREEN / RED SPLIT</span>
+          </div>
+          <p class="text-xs text-slate-400">
+            प्रत्येक प्राइस बिन (Price Level) पर कुल वॉल्यूम को <span class="text-emerald-300">Light Green (Buy)</span> और <span class="text-rose-300">Light Red (Sell)</span> में विभाजित कर Point of Control (POC) निकाला जाता है।
+          </p>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Number of Price Bins (बिन की संख्या)</span>
+                <span id="valVpvrBins" class="text-cyan-400 font-bold">28 Bins</span>
+              </div>
+              <input id="slVpvrBins" type="range" min="15" max="50" step="1" value="28" class="w-full" oninput="updateLabParam('vpvrBins', +this.value)" />
+            </div>
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Buy/Sell Histogram Opacity (पारदर्शिता)</span>
+                <span id="valVpvrOpacity" class="text-emerald-400 font-bold">55%</span>
+              </div>
+              <input id="slVpvrOpacity" type="range" min="20" max="90" step="5" value="55" class="w-full" oninput="updateLabParam('vpvrOpacity', +this.value)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 5-Formula Consensus S/R & MTF Momentum -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-purple-400">4. 5-FORMULA CONSENSUS S/R &amp; MTF MOMENTUM</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">WEIGHTED MODEL</span>
+          </div>
+          <div class="space-y-2.5 font-mono text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300">F1: Swing High/Low Pivots</span>
+              <div class="flex items-center gap-2 w-44">
+                <input id="slWSwing" type="range" min="0" max="40" value="25" class="w-full" oninput="updateSrWeight('swing', +this.value)" />
+                <span id="wSwing" class="w-9 text-right text-cyan-300">25%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300">F2: VPVR High Volume Nodes</span>
+              <div class="flex items-center gap-2 w-44">
+                <input id="slWVpvr" type="range" min="0" max="40" value="25" class="w-full" oninput="updateSrWeight('vpvr', +this.value)" />
+                <span id="wVpvr" class="w-9 text-right text-cyan-300">25%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300">F3: VWAP StdDev Bands</span>
+              <div class="flex items-center gap-2 w-44">
+                <input id="slWVwap" type="range" min="0" max="40" value="20" class="w-full" oninput="updateSrWeight('vwap', +this.value)" />
+                <span id="wVwap" class="w-9 text-right text-cyan-300">20%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300">F4: Order Book Liquidity Walls</span>
+              <div class="flex items-center gap-2 w-44">
+                <input id="slWWalls" type="range" min="0" max="40" value="20" class="w-full" oninput="updateSrWeight('walls', +this.value)" />
+                <span id="wWalls" class="w-9 text-right text-cyan-300">20%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300">F5: Psychological Round Levels</span>
+              <div class="flex items-center gap-2 w-44">
+                <input id="slWRound" type="range" min="0" max="40" value="10" class="w-full" oninput="updateSrWeight('round', +this.value)" />
+                <span id="wRound" class="w-9 text-right text-cyan-300">10%</span>
+              </div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-[#1a2634]">
+            <div class="flex justify-between font-mono text-xs mb-1">
+              <span class="text-slate-300">MTF Momentum Lookback (मोमेंटम अवधि)</span>
+              <span id="valMtfPeriod" class="text-purple-300 font-bold">8 Candles</span>
+            </div>
+            <input id="slMtfPeriod" type="range" min="4" max="20" step="1" value="8" class="w-full" oninput="updateLabParam('mtfLookback', +this.value)" />
+          </div>
+        </div>
+
+        <!-- 5. MTF RSI & MACD FORMULA ENGINE -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-cyan-400">5. MTF RSI &amp; MACD FORMULA ENGINE</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">1m / 5m / 15m / 4h</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#060a0e] border border-[#162230] font-mono text-xs text-slate-300 space-y-1 overflow-x-auto">
+            <div><span class="text-cyan-400">RSI</span> = 100 - 100 / (1 + AvgGain / AvgLoss)</div>
+            <div><span class="text-emerald-400">MACD</span> = EMA(fast) - EMA(slow) &nbsp;|&nbsp; <span class="text-amber-400">Signal</span> = EMA(MACD, sig)</div>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-[#1a2634] bg-[#0a1017]">
+            <table class="w-full text-left font-mono-num text-[11px]">
+              <thead class="bg-[#0e161f] text-slate-400 border-b border-[#1a2634]">
+                <tr>
+                  <th class="px-2.5 py-1.5">TF</th>
+                  <th class="px-2.5 py-1.5">RSI</th>
+                  <th class="px-2.5 py-1.5">MACD</th>
+                  <th class="px-2.5 py-1.5">SIGNAL</th>
+                  <th class="px-2.5 py-1.5">HIST</th>
+                  <th class="px-2.5 py-1.5">DIV</th>
+                </tr>
+              </thead>
+              <tbody id="labRsiMacdTable" class="divide-y divide-[#162230] text-slate-200"></tbody>
+            </table>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">RSI Period (अवधि)</span>
+                <span id="valRsiPeriod" class="text-cyan-400 font-bold">14</span>
+              </div>
+              <input id="slRsiPeriod" type="range" min="7" max="21" step="1" value="14" class="w-full" oninput="updateLabParam('rsiPeriod', +this.value)" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between font-mono text-xs mb-1">
+                  <span class="text-slate-300">Overbought</span>
+                  <span id="valRsiOB" class="text-rose-400 font-bold">70</span>
+                </div>
+                <input id="slRsiOB" type="range" min="65" max="85" step="1" value="70" class="w-full" oninput="updateLabParam('rsiOverbought', +this.value)" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-xs mb-1">
+                  <span class="text-slate-300">Oversold</span>
+                  <span id="valRsiOS" class="text-emerald-400 font-bold">30</span>
+                </div>
+                <input id="slRsiOS" type="range" min="15" max="35" step="1" value="30" class="w-full" oninput="updateLabParam('rsiOversold', +this.value)" />
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 font-mono text-xs">
+              <span class="text-slate-300">MACD Preset (Fast, Slow, Sig):</span>
+              <div class="flex items-center gap-1.5">
+                <button onclick="setMacdPreset(12,26,9)" id="macdPre_12_26_9" class="macd-pre-btn px-2 py-1 rounded-md border border-cyan-500/50 bg-cyan-500/15 text-cyan-300 text-[11px] font-bold">12,26,9</button>
+                <button onclick="setMacdPreset(8,21,5)" id="macdPre_8_21_5" class="macd-pre-btn px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-400 text-[11px]">8,21,5</button>
+                <button onclick="setMacdPreset(5,13,4)" id="macdPre_5_13_4" class="macd-pre-btn px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-400 text-[11px]">5,13,4</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5B. PREDICTIVE MACD CROSSOVER & DUAL-SLOPE TREND ENGINE -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4 border border-lime-500/25">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-mono text-sm font-bold text-lime-400">5B. PREDICTIVE MACD SLOPE &amp; DUAL-TREND ENGINE</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-lime-500/15 text-lime-300 border border-lime-500/30">TOP RAIL + MTF MACD</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#060a0e] border border-[#162230] font-mono text-[11px] text-slate-300 space-y-1 overflow-x-auto">
+            <div><span class="text-cyan-400">Slope ∠</span> = atan((ΔLine / L) / Scale)° &nbsp;|&nbsp; <span class="text-amber-400">Dist%</span> = (|MACD - Sig| / Scale) × 100</div>
+            <div><span class="text-lime-300">Imminent Cross</span> = (Dist% ≤ MaxDist) ∧ (|Histₜ| &lt; |Histₜ₋₁|) ∧ (|∠M| ≥ MinSlope°)</div>
+            <div><span class="text-fuchsia-300">Dual Trend</span> = (∠M ≥ Dual° ∧ ∠S ≥ 0.65·Dual°) ∨ (∠M ≤ -Dual° ∧ ∠S ≤ -0.65·Dual°)</div>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-[#1a2634] bg-[#0a1017]">
+            <table class="w-full text-left font-mono-num text-[11px]">
+              <thead class="bg-[#0e161f] text-slate-400 border-b border-[#1a2634]">
+                <tr>
+                  <th class="px-2 py-1.5">TF</th>
+                  <th class="px-2 py-1.5">MACD ∠</th>
+                  <th class="px-2 py-1.5">SIG ∠</th>
+                  <th class="px-2 py-1.5">DIST %</th>
+                  <th class="px-2 py-1.5">ETA</th>
+                  <th class="px-2 py-1.5">PREDICTIVE STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="labMacdPredTable" class="divide-y divide-[#162230] text-slate-200"></tbody>
+            </table>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+              <span class="text-slate-300">Sensitivity Preset (संवेदनशीलता):</span>
+              <div class="flex items-center gap-1.5">
+                <button onclick="setMacdPredPreset('scalp')" id="macdPredPre_scalp" class="macd-pred-pre-btn px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-400 text-[11px]">SCALP</button>
+                <button onclick="setMacdPredPreset('balanced')" id="macdPredPre_balanced" class="macd-pred-pre-btn px-2 py-1 rounded-md border border-lime-500/50 bg-lime-500/15 text-lime-300 text-[11px] font-bold">BALANCED</button>
+                <button onclick="setMacdPredPreset('strict')" id="macdPredPre_strict" class="macd-pred-pre-btn px-2 py-1 rounded-md border border-[#1a2634] bg-[#0e161f] text-slate-400 text-[11px]">STRICT</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between font-mono text-xs mb-1">
+                  <span class="text-slate-300">Imminent Min Slope Angle (ढलान ∠)</span>
+                  <span id="valMacdSlopeThresh" class="text-lime-400 font-bold">18°</span>
+                </div>
+                <input id="slMacdSlopeThresh" type="range" min="5" max="60" step="1" value="18" class="w-full" oninput="updateLabParam('macdSlopeThresh', +this.value)" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-xs mb-1">
+                  <span class="text-slate-300">Max Convergence Distance (दूरी %)</span>
+                  <span id="valMacdConvDist" class="text-amber-400 font-bold">18%</span>
+                </div>
+                <input id="slMacdConvDist" type="range" min="5" max="45" step="1" value="18" class="w-full" oninput="updateLabParam('macdConvDist', +this.value)" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between font-mono text-xs mb-1">
+                  <span class="text-slate-300">Dual-Line Trend Slope (एक साथ ढलान ∠)</span>
+                  <span id="valMacdDualSlope" class="text-cyan-400 font-bold">16°</span>
+                </div>
+                <input id="slMacdDualSlope" type="range" min="5" max="55" step="1" value="16" class="w-full" oninput="updateLabParam('macdDualSlopeThresh', +this.value)" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-xs mb-1">
+                  <span class="text-slate-300">Slope Lookback (कैंडल विंडो)</span>
+                  <span id="valMacdSlopeLb" class="text-sky-400 font-bold">2 Candles</span>
+                </div>
+                <input id="slMacdSlopeLb" type="range" min="1" max="5" step="1" value="2" class="w-full" oninput="updateLabParam('macdSlopeLookback', +this.value)" />
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 pt-1.5 border-t border-[#1a2634] font-mono text-[11px]">
+              <label class="flex items-center gap-1.5 cursor-pointer text-lime-300">
+                <input id="chkMacdShowImminent" type="checkbox" checked onchange="updateLabParam('macdShowImminent', this.checked)" class="accent-lime-400" />
+                <span>◎ Imminent Cross</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-cyan-300">
+                <input id="chkMacdShowDualTrend" type="checkbox" checked onchange="updateLabParam('macdShowDualTrend', this.checked)" class="accent-cyan-400" />
+                <span>▲▼ Dual-Line Trend</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-emerald-300">
+                <input id="chkMacdShowConfirmed" type="checkbox" checked onchange="updateLabParam('macdShowConfirmed', this.checked)" class="accent-emerald-400" />
+                <span>◆ Confirmed Cross</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. LIGHT ML SIGNAL & NOISE-FILTER ENGINE -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-fuchsia-400">6. LIGHT ML SIGNAL &amp; NOISE-FILTER ENGINE</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30">CLOSED-CANDLE ONLY</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#060a0e] border border-[#162230] font-mono text-xs text-fuchsia-300 overflow-x-auto">
+            P(Sig) = σ( W_rsi·RSI + W_macd·MACD + W_delta·ΔV + W_obi·OBI + W_div·Div ) × 100
+          </div>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Signal Cooldown (नॉइज़ फ़िल्टर अंतराल)</span>
+                <span id="valMlCooldown" class="text-cyan-400 font-bold">8 Candles</span>
+              </div>
+              <input id="slMlCooldown" type="range" min="4" max="20" step="1" value="8" class="w-full" oninput="updateLabParam('mlCooldown', +this.value)" />
+            </div>
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Min ML Confidence Threshold (न्यूनतम विश्वास %)</span>
+                <span id="valMlMinConf" class="text-amber-400 font-bold">74%</span>
+              </div>
+              <input id="slMlMinConf" type="range" min="60" max="90" step="1" value="74" class="w-full" oninput="updateLabParam('mlMinConf', +this.value)" />
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-[#1a2634]">
+              <div>
+                <div class="flex justify-between font-mono text-[11px] mb-1">
+                  <span class="text-slate-300">W_rsi/macd</span>
+                  <span id="valMlOscW" class="text-cyan-300 font-bold">0.40</span>
+                </div>
+                <input id="slMlOscW" type="range" min="0.1" max="0.8" step="0.05" value="0.40" class="w-full" oninput="updateLabParam('mlOscWeight', +this.value)" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-[11px] mb-1">
+                  <span class="text-slate-300">W_flow/obi</span>
+                  <span id="valMlFlowW" class="text-emerald-300 font-bold">0.35</span>
+                </div>
+                <input id="slMlFlowW" type="range" min="0.1" max="0.8" step="0.05" value="0.35" class="w-full" oninput="updateLabParam('mlFlowWeight', +this.value)" />
+              </div>
+              <div>
+                <div class="flex justify-between font-mono text-[11px] mb-1">
+                  <span class="text-slate-300">W_div Boost</span>
+                  <span id="valMlDivW" class="text-fuchsia-300 font-bold">0.25</span>
+                </div>
+                <input id="slMlDivW" type="range" min="0.05" max="0.6" step="0.05" value="0.25" class="w-full" oninput="updateLabParam('mlDivBoost', +this.value)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. GEOMETRIC PATTERN ENGINE (123 PATTERNS DTW & PIVOT) -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-sky-400">7. GEOMETRIC PATTERN ENGINE (123 STRUCTURES)</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">PER-DOT ACCURACY</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#060a0e] border border-[#162230] font-mono text-xs text-sky-300 overflow-x-auto">
+            Overall% = (status === 'FAIL') ? 0 : Round( Σ(PassedDot%) / TotalStages )
+          </div>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Hot Match Filter Threshold (&gt;X% Badge)</span>
+                <span id="valGeoThresh" class="text-sky-400 font-bold">70%</span>
+              </div>
+              <input id="slGeoThresh" type="range" min="40" max="95" step="5" value="70" class="w-full" oninput="updateLabParam('geoMatchThreshold', +this.value)" />
+            </div>
+            <div>
+              <div class="flex justify-between font-mono text-xs mb-1">
+                <span class="text-slate-300">Pivot Lookback Window (पिवट संवेदनशीलता)</span>
+                <span id="valGeoPivot" class="text-amber-400 font-bold">28 Candles</span>
+              </div>
+              <input id="slGeoPivot" type="range" min="16" max="50" step="2" value="28" class="w-full" oninput="updateLabParam('geoLookback', +this.value)" />
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 font-mono text-xs">
+              <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <input id="chkGeoScaleInv" type="checkbox" checked onchange="updateLabParam('geoScaleInvariant', this.checked)" class="accent-cyan-400" />
+                Scale &amp; Rotation Invariance
+              </label>
+              <span class="text-[10.5px] text-emerald-400 font-semibold">✓ Strict TF Isolation Enabled</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. PER-TIMEFRAME CONFLUENCE WINNER & CONFLICT RESOLUTION MATRIX -->
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-emerald-400">8. CONFLUENCE WINNER (<span id="labConfTfLabel" class="uppercase">1m</span> ONLY)</h3>
+            <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">LIVE ARBITER</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 font-mono text-[11px]">
+            <div>
+              <div class="flex justify-between mb-1"><span class="text-slate-400">W_Overall%</span><span id="valCwMatch" class="text-sky-300">50%</span></div>
+              <input id="slCwMatch" type="range" min="10" max="70" step="5" value="50" class="w-full" oninput="updateLabParam('cwMatch', +this.value)" />
+            </div>
+            <div>
+              <div class="flex justify-between mb-1"><span class="text-slate-400">W_S/R</span><span id="valCwSr" class="text-emerald-300">25%</span></div>
+              <input id="slCwSr" type="range" min="10" max="60" step="5" value="25" class="w-full" oninput="updateLabParam('cwSr', +this.value)" />
+            </div>
+            <div>
+              <div class="flex justify-between mb-1"><span class="text-slate-400">W_Delta+OBI</span><span id="valCwFlow" class="text-amber-300">25%</span></div>
+              <input id="slCwFlow" type="range" min="10" max="60" step="5" value="25" class="w-full" oninput="updateLabParam('cwFlow', +this.value)" />
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-[#1a2634] bg-[#0a1017]">
+            <table class="w-full text-left font-mono-num text-[11px]">
+              <thead class="bg-[#0e161f] text-slate-400 border-b border-[#1a2634]">
+                <tr>
+                  <th class="px-2 py-1.5">RANK</th>
+                  <th class="px-2 py-1.5">PATTERN</th>
+                  <th class="px-2 py-1.5">DOTS</th>
+                  <th class="px-2 py-1.5">OVERALL</th>
+                  <th class="px-2 py-1.5">S/R</th>
+                  <th class="px-2 py-1.5">RISK</th>
+                  <th class="px-2 py-1.5">SCORE</th>
+                </tr>
+              </thead>
+              <tbody id="labConfluenceTable" class="divide-y divide-[#162230] text-slate-200"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== PATTERN INSPECTOR MODAL ==================== -->
+  <div id="patternModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) closePatternModal()">
+    <div class="glass-panel rounded-2xl max-w-3xl w-full p-5 space-y-4 border border-cyan-500/40 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-3 border-b border-[#1a2634] pb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="modalPatId" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">B-01</span>
+            <h3 id="modalPatName" class="font-mono text-base font-bold text-white">Pattern Name</h3>
+          </div>
+          <p id="modalPatCat" class="font-mono text-xs text-slate-400 mt-1">Category • 5 Stages</p>
+        </div>
+        <button onclick="closePatternModal()" class="text-slate-400 hover:text-white font-mono text-lg px-2">✕</button>
+      </div>
+
+      <!-- Modal Repeat Alert Banner -->
+      <div id="modalPatHistoryAlert" class="hidden rounded-xl px-3.5 py-2.5 font-mono text-xs border"></div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+        <div class="md:col-span-5 space-y-2.5">
+          <div id="modalPatSvg" class="rounded-xl bg-[#060a0e] border border-[#162230] p-3 flex items-center justify-center h-44"></div>
+          <div class="flex flex-wrap items-center justify-center gap-2.5 font-mono text-[10px] text-slate-400">
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>PASS (%)</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>FAIL</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-400 pulse-dot"></span>TESTING</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full border-[1.5px] border-slate-400 bg-transparent"></span>AWAITING TEST</span>
+          </div>
+        </div>
+        <div id="modalPatStats" class="md:col-span-7 space-y-2.5 font-mono text-xs"></div>
+      </div>
+
+      <!-- Modal Prior History Timeline -->
+      <div class="rounded-xl bg-[#080e15] border border-[#1a2634] p-3 space-y-2">
+        <div class="font-mono text-[11px] font-bold text-amber-300 flex items-center justify-between">
+          <span>📜 PRIOR HISTORY TIMELINE (WINS &amp; LAST-POINT FAILS)</span>
+          <span id="modalHistCount" class="text-[10px] text-slate-400">0 Events</span>
+        </div>
+        <div id="modalPatHistoryList" class="space-y-1.5 max-h-36 overflow-y-auto font-mono text-[11px]"></div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-[#1a2634] font-mono text-xs">
+        <button onclick="closePatternModal()" class="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 hover:text-white">CLOSE</button>
+        <button id="modalPinBtn" class="px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/60 text-cyan-200 hover:bg-cyan-500/30 font-bold">
+          📌 PIN TO MAIN CHART
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== BINANCE CONNECTION DIAGNOSTICS MODAL ==================== -->
+  <div id="connDiagModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) closeConnDiagModal()">
+    <div class="glass-panel rounded-2xl max-w-2xl w-full p-5 space-y-4 border border-cyan-500/40 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-3 border-b border-[#1a2634] pb-3">
+        <div>
+          <h3 class="font-mono text-sm sm:text-base font-bold text-cyan-300">📡 BINANCE CONNECTION DIAGNOSTICS</h3>
+          <p id="diagEnvLine" class="text-xs font-mono text-slate-400 mt-0.5">Environment: Detecting...</p>
+        </div>
+        <button onclick="closeConnDiagModal()" class="text-slate-400 hover:text-white font-mono text-lg px-2">✕</button>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[11px]">
+        <div class="p-2.5 rounded-xl bg-[#0a1017] border border-[#1a2634]">
+          <div class="text-[10px] text-slate-400">REST STATUS</div>
+          <div id="diagRestState" class="font-bold text-amber-300 mt-0.5">--</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-[#0a1017] border border-[#1a2634]">
+          <div class="text-[10px] text-slate-400">WEBSOCKET</div>
+          <div id="diagWsState" class="font-bold text-amber-300 mt-0.5">--</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-[#0a1017] border border-[#1a2634]">
+          <div class="text-[10px] text-slate-400">ACTIVE MIRROR</div>
+          <div id="diagMirror" class="font-bold text-cyan-300 mt-0.5 truncate">--</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-[#0a1017] border border-[#1a2634]">
+          <div class="text-[10px] text-slate-400">NEXT RETRY</div>
+          <div id="diagRetryInfo" class="font-bold text-slate-200 mt-0.5">--</div>
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <div class="font-mono text-[11px] font-bold text-slate-300">ENDPOINT STATUS (INDEPENDENT FETCH)</div>
+        <div id="diagEndpointGrid" class="grid grid-cols-1 sm:grid-cols-5 gap-2 font-mono text-[10.5px]"></div>
+      </div>
+
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between font-mono text-[11px]">
+          <span class="font-bold text-slate-300">RECENT CONNECTION &amp; ERROR LOG</span>
+          <button onclick="clearConnDiagLogs()" class="text-[10px] text-slate-400 hover:text-rose-300">CLEAR LOG</button>
+        </div>
+        <div id="diagLogList" class="rounded-xl bg-[#060a0e] border border-[#162230] p-2.5 max-h-48 overflow-y-auto font-mono text-[10.5px] space-y-1 text-slate-300">
+          <div class="text-slate-500">No connection events logged yet.</div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-[#1a2634] font-mono text-xs">
+        <button onclick="closeConnDiagModal()" class="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 hover:text-white">CLOSE</button>
+        <button onclick="retryConnection(); renderConnDiagModal();" class="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-400/60 text-emerald-200 hover:bg-emerald-500/30 font-bold">↻ RETRY LIVE NOW</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== GOOGLE SHEET SYNC CONFIG MODAL ==================== -->
+  <div id="sheetConfigModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) closeSheetConfigModal()">
+    <div class="glass-panel rounded-2xl max-w-xl w-full p-5 space-y-4 border border-cyan-500/40">
+      <div class="flex items-start justify-between gap-3 border-b border-[#1a2634] pb-3">
+        <div>
+          <h3 class="font-mono text-sm sm:text-base font-bold text-cyan-300">⚙️ GOOGLE SHEET / APPS SCRIPT SYNC URL</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Paste your deployed Apps Script Web App URL (ends with <code class="text-cyan-300">/exec</code>). Works inside Google Sites embeds and standalone browsers.</p>
+        </div>
+        <button onclick="closeSheetConfigModal()" class="text-slate-400 hover:text-white font-mono text-lg px-2">✕</button>
+      </div>
+      <div class="space-y-2">
+        <label for="sheetUrlInput" class="block font-mono text-[11px] text-slate-300">WEB APP DEPLOYMENT URL</label>
+        <input id="sheetUrlInput" type="text" placeholder="https://script.google.com/macros/s/.../exec"
+          class="w-full px-3 py-2 rounded-lg bg-[#070b0f] border border-[#1a2634] focus:border-cyan-500 outline-none text-xs font-mono text-slate-100 placeholder-slate-500" />
+        <p class="font-mono text-[10.5px] text-slate-400">
+          Apps Script → Deploy → Manage deployments → Copy <strong>Web app URL</strong> (Access: <em>Anyone</em>).
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1a2634] font-mono text-xs">
+        <button onclick="resetSheetUrlDefault()" class="px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-semibold">↺ RESET DEFAULT</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeSheetConfigModal()" class="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 hover:text-white">CANCEL</button>
+          <button onclick="saveSheetUrlConfig()" class="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-400/60 text-emerald-200 hover:bg-emerald-500/30 font-bold">💾 SAVE &amp; SYNC</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Floating Sync Toast (visible on Main Terminal & all tabs) -->
+  <div id="globalSheetToast" class="hidden fixed bottom-4 right-4 left-4 sm:left-auto max-w-md z-50 rounded-xl px-3.5 py-2.5 font-mono text-xs border shadow-2xl backdrop-blur-md"></div>
+
+  <!-- ==================== APPLICATION JAVASCRIPT ==================== -->
+  <script src="app.js"></script>
+</body>
+</html>
